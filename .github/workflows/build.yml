@@ -67,7 +67,9 @@ jobs:
           sudo apt-get install -y yasm nasm pkg-config build-essential \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
             gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-            mingw-w64 libssl-dev libx264-dev
+            gcc-mingw-w64-arm g++-mingw-w64-arm \
+            gcc-mingw-w64-aarch64 g++-mingw-w64-aarch64 \
+            libssl-dev
 
       # macOS 依赖
       - name: Install deps (macOS)
