@@ -1,0 +1,72 @@
+name: Build FFmpeg Static
+
+on:
+  push:
+    tags:
+      - "v*"   # 打 tag 时触发，比如 v7.1
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: ubuntu-latest
+            arch: aarch64
+          - os: windows-latest
+            arch: x86_64
+          - os: macos-latest
+            arch: x86_64
+          - os: macos-latest
+            arch: arm64
+
+    steps:
+      - name: Checkout FFmpeg source
+        uses: actions/checkout@v4
+        with:
+          repository: FFmpeg/FFmpeg
+          ref: master   # 或者指定版本 tag
+
+      - name: Install dependencies
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y yasm nasm pkg-config build-essential
+          fi
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            brew install yasm nasm
+          fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            choco install make nasm yasm
+          fi
+
+      - name: Configure FFmpeg
+        run: |
+          ./configure \
+            --enable-static \
+            --disable-shared \
+            --disable-programs \
+            --disable-doc \
+            --disable-debug \
+            --prefix=$PWD/build
+
+      - name: Build
+        run: make -j$(nproc)
+
+      - name: Install
+        run: make install
+
+      - name: Package
+        run: |
+          cd build
+          zip -r ../ffmpeg-${{ matrix.os }}-${{ matrix.arch }}.zip *
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ffmpeg-${{ matrix.os }}-${{ matrix.arch }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
