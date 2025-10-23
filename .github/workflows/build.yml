@@ -235,8 +235,6 @@ jobs:
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             linux-arm)
-              export PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig
-              pkg-config --modversion x264
               ./configure --arch=arm --target-os=linux --cross-prefix=arm-linux-gnueabihf- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -247,7 +245,8 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 \
+                --extra-cflags="-I$HOME/x264-arm/include" --extra-ldflags="-L$HOME/x264-arm/lib -lx264"
               ;;
             linux-arm64)
               export PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig
