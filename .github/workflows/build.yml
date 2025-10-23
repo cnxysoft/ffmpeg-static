@@ -58,7 +58,7 @@ jobs:
         if: matrix.triplet == 'linux-386' || matrix.triplet == 'linux-amd64'
         run: |
           sudo apt-get update
-          sudo apt-get install -y yasm nasm pkg-config build-essential gcc-multilib g++-multilib libssl-dev libx264-dev
+          sudo apt-get install -y yasm nasm pkg-config build-essential gcc-multilib g++-multilib libx264-dev
 
       - name: Install deps (Linux ARM/ARM64)
         if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64'
@@ -67,7 +67,7 @@ jobs:
           sudo apt-get install -y yasm nasm pkg-config build-essential \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
             gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-            libssl-dev
+           
 
       # macOS 依赖
       - name: Install deps (macOS)
@@ -85,13 +85,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-mingw-w64-i686 g++-mingw-w64-i686 \
                                   binutils-mingw-w64-i686 mingw-w64-i686-dev \
-                                  yasm nasm pkg-config libssl-dev libx264-dev
-
-      - name: Install deps (Windows arm/arm64 cross)
-        if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y  libssl-dev
+                                  yasm nasm pkg-config libx264-dev
 
       - name: Install LLVM-mingw (Windows ARM/ARM64)
         if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
@@ -190,7 +184,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
+                --enable-gnutls --enable-gpl --enable-libx264
               ;;
             linux-arm)
               PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig \
@@ -204,7 +198,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-gnutls --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             linux-arm64)
               PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig \
@@ -218,7 +212,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-gnutls --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             windows-386)
               PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig \
@@ -232,7 +226,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-gnutls --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             windows-arm)
               PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig \
@@ -246,7 +240,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-gnutls --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             windows-arm64)
               PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig \
@@ -260,7 +254,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-gnutls --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             *)
               ./configure --prefix=$PWD/build \
@@ -273,7 +267,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
+                --enable-gnutls --enable-gpl --enable-libx264
               ;;
           esac
 
