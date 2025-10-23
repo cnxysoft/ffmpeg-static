@@ -249,19 +249,29 @@ jobs:
               ;;
             windows-arm)
               CROSS=armv7-w64-mingw32
-              CONF=mingw64
+              CONF=mingw
               PREFIX=$HOME/openssl-winarm
-              EXTRA="no-asm no-shared no-tests"
-              RCFLAGS="--target=pe-arm"
-              WINDRESFLAGS="--target=pe-arm"
+              # 对于 Windows ARM，使用更简单的配置
+              EXTRA="no-asm no-shared no-tests -static"
+              export RC=llvm-windres
+              export WINDRES=llvm-windres
+              # 设置正确的工具链变量
+              export CC=clang
+              export AR=llvm-ar
+              export RANLIB=llvm-ranlib
+              export STRIP=llvm-strip
               ;;
             windows-arm64)
               CROSS=aarch64-w64-mingw32
               CONF=mingw64
               PREFIX=$HOME/openssl-winarm64
-              EXTRA="no-asm no-shared no-tests"
-              RCFLAGS="--target=pe-arm64"
-              WINDRESFLAGS="--target=pe-arm64"
+              EXTRA="no-asm no-shared no-tests -static"
+              export RC=llvm-windres
+              export WINDRES=llvm-windres
+              export CC=clang
+              export AR=llvm-ar
+              export RANLIB=llvm-ranlib
+              export STRIP=llvm-strip
               ;;
             windows-386)
               CROSS=i686-w64-mingw32
@@ -271,37 +281,27 @@ jobs:
               ;;
           esac
 
-          # 1) 统一工具链为 LLVM（避免 GNU 前缀工具缺失）
-          export CC="${CROSS}-clang"
-          export AR="llvm-ar"
-          export RANLIB="llvm-ranlib"
-
-          # 2) 为 windres 建前缀别名，兼容 OpenSSL 的 CROSS 前缀化行为
-          #    注意：llvm-windres 在 $PATH 中（你已通过 GITHUB_PATH 添加过 TOOLCHAIN/bin）
-          LLVM_WINDRES="$(command -v llvm-windres)"
-          if [ -n "$LLVM_WINDRES" ]; then
-            # 既建 $(CROSS)-windres 也建 $(CROSS)-llvm-windres，两个都覆盖到
-            ln -sf "$LLVM_WINDRES" "$(dirname "$LLVM_WINDRES")/${CROSS}-windres"
-            ln -sf "$LLVM_WINDRES" "$(dirname "$LLVM_WINDRES")/${CROSS}-llvm-windres"
-            export RC="${CROSS}-llvm-windres"
-            export WINDRES="${CROSS}-llvm-windres"
-          else
-            echo "llvm-windres not found in PATH"; exit 1
-          fi
-
-          # 3) 传递目标架构 flags，避免默认的 pe-x86-64 插入
-          export RCFLAGS WINDRESFLAGS
-
           curl -LO https://www.openssl.org/source/openssl-3.3.2.tar.gz
           tar -xf openssl-3.3.2.tar.gz
           cd openssl-3.3.2
 
-          make clean || true
-
-          ./Configure $CONF $EXTRA \
-            --cross-compile-prefix=$CROSS- \
-            --prefix=$PREFIX --openssldir=$PREFIX/ssl \
-            WINDRES="$WINDRES" RC="$RC"
+          # 对于 Windows ARM 目标，使用不同的配置方式
+          if [[ "${{ matrix.triplet }}" == "windows-arm" || "${{ matrix.triplet }}" == "windows-arm64" ]]; then
+            # 使用 clang 直接编译，而不是通过交叉编译前缀
+            if [[ "${{ matrix.triplet }}" == "windows-arm" ]]; then
+              ./Configure $CONF $EXTRA \
+                --prefix=$PREFIX --openssldir=$PREFIX/ssl \
+                -target armv7-w64-mingw32
+            else
+              ./Configure $CONF $EXTRA \
+                --prefix=$PREFIX --openssldir=$PREFIX/ssl \
+                -target aarch64-w64-mingw32
+            fi
+          else
+            ./Configure $CONF $EXTRA \
+              --cross-compile-prefix=$CROSS- \
+              --prefix=$PREFIX --openssldir=$PREFIX/ssl
+          fi
 
           make -j"$(nproc)"
           make install_sw
