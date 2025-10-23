@@ -186,7 +186,6 @@ jobs:
           AR=llvm-ar \
           RANLIB=llvm-ranlib \
           STRIP=llvm-strip \
-          CFLAGS="-D__USE_MINGW_ANSI_STDIO=1 -DNO_FSEEKO" \
           ./configure \
             --host=x86_64-w64-mingw32 \
             --cross-prefix=x86_64-w64-mingw32- \
@@ -194,6 +193,8 @@ jobs:
             --disable-cli \
             --prefix=$HOME/x264-win64
           sed -i 's/-mstack-alignment=64//g' config.mak
+          echo "#define fseeko _fseeki64" >> config.h
+          echo "#define ftello _ftelli64" >> config.h
           make -j"$(nproc)"
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-win64/lib/pkgconfig" >> $GITHUB_ENV
