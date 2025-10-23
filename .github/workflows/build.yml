@@ -19,16 +19,16 @@ jobs:
             triplet: darwin-arm64
 
           # Linux
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             triplet: linux-amd64
             arch: x86_64
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             triplet: linux-386
             arch: i686
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             triplet: linux-arm
             arch: arm
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             triplet: linux-arm64
             arch: aarch64
 
@@ -36,13 +36,13 @@ jobs:
           - os: windows-latest
             triplet: windows-amd64
             arch: x86_64
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             triplet: windows-386
             arch: i686
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             triplet: windows-arm
             arch: arm
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             triplet: windows-arm64
             arch: aarch64
 
