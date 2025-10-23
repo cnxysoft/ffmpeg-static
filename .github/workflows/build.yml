@@ -60,15 +60,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y yasm nasm pkg-config build-essential gcc-multilib g++-multilib libssl-dev libx264-dev
 
-      - name: Install deps (Linux ARM/ARM64 + Windows ARM/ARM64)
-        if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64' || matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
+      - name: Install deps (Linux ARM/ARM64)
+        if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64'
         run: |
           sudo apt-get update
           sudo apt-get install -y yasm nasm pkg-config build-essential \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
             gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-            gcc-mingw-w64-arm g++-mingw-w64-arm \
-            gcc-mingw-w64-aarch64 g++-mingw-w64-aarch64 \
             libssl-dev
 
       # macOS 依赖
@@ -88,6 +86,13 @@ jobs:
           sudo apt-get install -y gcc-mingw-w64-i686 g++-mingw-w64-i686 \
                                   binutils-mingw-w64-i686 mingw-w64-i686-dev \
                                   yasm nasm pkg-config libssl-dev libx264-dev
+
+      - name: Install LLVM-mingw (Windows ARM/ARM64)
+        if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
+        run: |
+          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20240820/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64.tar.xz
+          tar -xf llvm-mingw-*.tar.xz
+          echo "$PWD/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64/bin" >> $GITHUB_PATH
 
       - name: Build and install x264 (Linux arm cross)
         if: matrix.triplet == 'linux-arm'
