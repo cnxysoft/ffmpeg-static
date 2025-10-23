@@ -3,8 +3,8 @@ name: Build FFmpeg Static
 on:
   push:
     tags:
-      - "v*"   # 打 tag 时触发，比如 v7.1
-  workflow_dispatch: # 允许手动触发
+      - "v*"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,91 +12,197 @@ jobs:
     strategy:
       matrix:
         include:
-          # Windows
-          - os: windows-latest
-            arch: x86_64
-          - os: windows-latest
-            arch: arm64
+          # macOS
+          - os: macos-latest
+            triplet: darwin-amd64
+          - os: macos-14
+            triplet: darwin-arm64
+
           # Linux
           - os: ubuntu-latest
+            triplet: linux-amd64
             arch: x86_64
           - os: ubuntu-latest
+            triplet: linux-386
+            arch: i686
+          - os: ubuntu-latest
+            triplet: linux-arm
+            arch: arm
+          - os: ubuntu-latest
+            triplet: linux-arm64
             arch: aarch64
-          # macOS
-          - os: macos-latest   # Intel
+
+          # Windows
+          - os: windows-latest
+            triplet: windows-amd64
             arch: x86_64
-          - os: macos-14       # Apple Silicon
-            arch: arm64
+          - os: ubuntu-latest
+            triplet: windows-386
+            arch: i686
+          - os: ubuntu-latest
+            triplet: windows-arm
+            arch: arm
+          - os: ubuntu-latest
+            triplet: windows-arm64
+            arch: aarch64
 
     steps:
-      - name: Checkout FFmpeg source
+      - name: Checkout FFmpeg
         uses: actions/checkout@v4
         with:
           repository: FFmpeg/FFmpeg
-          ref: master   # 或者指定 tag
+          ref: n7.1   # 或 master
 
       # Linux 依赖
       - name: Install deps (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y yasm nasm pkg-config build-essential
+          sudo apt-get install -y yasm nasm pkg-config build-essential \
+            gcc-multilib g++-multilib \
+            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+            mingw-w64 libssl-dev libx264-dev
 
       # macOS 依赖
       - name: Install deps (macOS)
         if: runner.os == 'macOS'
-        run: |
-          brew install yasm nasm
+        run: brew install yasm nasm x264 openssl
 
       # Windows 依赖
       - name: Install deps (Windows)
         if: runner.os == 'Windows'
-        run: |
-          choco install make nasm yasm
+        run: choco install make nasm yasm
 
       - name: Configure FFmpeg
         run: |
-          ./configure \
-            --enable-static \
-            --disable-shared \
-            --disable-programs \
-            --disable-doc \
-            --disable-debug \
-            --disable-avdevice \
-            --disable-avfilter \
-            --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
-            --enable-protocol=http --enable-protocol=https \
-            --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
-            --enable-muxer=mp4 --enable-muxer=gif \
-            --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
-            --enable-encoder=libx264 --enable-encoder=aac \
-            --prefix=$PWD/build
-        shell: bash
+          case "${{ matrix.triplet }}" in
+            linux-386)
+              ./configure --arch=i686 --target-os=linux --prefix=$PWD/build \
+                --enable-static --disable-shared \
+                --disable-programs --disable-doc --disable-debug \
+                --disable-avdevice --disable-avfilter \
+                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
+                --enable-protocol=http --enable-protocol=https \
+                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
+                --enable-muxer=mp4 --enable-muxer=gif \
+                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
+                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-openssl --enable-gpl --enable-libx264
+              ;;
+            linux-arm)
+              ./configure --arch=arm --target-os=linux --cross-prefix=arm-linux-gnueabihf- --prefix=$PWD/build \
+                --enable-static --disable-shared \
+                --disable-programs --disable-doc --disable-debug \
+                --disable-avdevice --disable-avfilter \
+                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
+                --enable-protocol=http --enable-protocol=https \
+                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
+                --enable-muxer=mp4 --enable-muxer=gif \
+                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
+                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-openssl --enable-gpl --enable-libx264
+              ;;
+            linux-arm64)
+              ./configure --arch=aarch64 --target-os=linux --cross-prefix=aarch64-linux-gnu- --prefix=$PWD/build \
+                --enable-static --disable-shared \
+                --disable-programs --disable-doc --disable-debug \
+                --disable-avdevice --disable-avfilter \
+                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
+                --enable-protocol=http --enable-protocol=https \
+                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
+                --enable-muxer=mp4 --enable-muxer=gif \
+                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
+                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-openssl --enable-gpl --enable-libx264
+              ;;
+            windows-386)
+              ./configure --arch=i686 --target-os=win32 --cross-prefix=i686-w64-mingw32- --prefix=$PWD/build \
+                --enable-static --disable-shared \
+                --disable-programs --disable-doc --disable-debug \
+                --disable-avdevice --disable-avfilter \
+                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
+                --enable-protocol=http --enable-protocol=https \
+                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
+                --enable-muxer=mp4 --enable-muxer=gif \
+                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
+                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-openssl --enable-gpl --enable-libx264
+              ;;
+            windows-arm)
+              ./configure --arch=arm --target-os=win32 --cross-prefix=armv7-w64-mingw32- --prefix=$PWD/build \
+                --enable-static --disable-shared \
+                --disable-programs --disable-doc --disable-debug \
+                --disable-avdevice --disable-avfilter \
+                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
+                --enable-protocol=http --enable-protocol=https \
+                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
+                --enable-muxer=mp4 --enable-muxer=gif \
+                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
+                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-openssl --enable-gpl --enable-libx264
+              ;;
+            windows-arm64)
+              ./configure --arch=arm64 --target-os=win32 --cross-prefix=aarch64-w64-mingw32- --prefix=$PWD/build \
+                --enable-static --disable-shared \
+                --disable-programs --disable-doc --disable-debug \
+                --disable-avdevice --disable-avfilter \
+                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
+                --enable-protocol=http --enable-protocol=https \
+                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
+                --enable-muxer=mp4 --enable-muxer=gif \
+                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
+                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-openssl --enable-gpl --enable-libx264
+              ;;
+            *)
+              ./configure --prefix=$PWD/build \
+                --enable-static --disable-shared \
+                --disable-programs --disable-doc --disable-debug \
+                --disable-avdevice --disable-avfilter \
+                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
+                --enable-protocol=http --enable-protocol=https \
+                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
+                --enable-muxer=mp4 --enable-muxer=gif \
+                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
+                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-openssl --enable-gpl --enable-libx264
+              ;;
+          esac
 
       - name: Build
         run: |
+          # macOS: limit parallelism to avoid posix_spawn resource errors
           if [[ "${{ runner.os }}" == "macOS" ]]; then
             make -j4
-          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+          # Native Windows x86_64 job (windows-amd64): use mingw32-make single-thread
+          elif [[ "${{ matrix.triplet }}" == "windows-amd64" ]]; then
             mingw32-make -j1
+          # Other platforms: normal make with available cores
           else
-            make -j$(nproc)
+            make -j"$(nproc)"
           fi
         shell: bash
 
       - name: Install
-        run: make install
+        run: |
+          if [[ "${{ matrix.triplet }}" == "windows-amd64" ]]; then
+            mingw32-make install
+          else
+            make install
+          fi
         shell: bash
 
       - name: Package
         run: |
           cd build
-          zip -r ../ffmpeg-${{ matrix.os }}-${{ matrix.arch }}.zip *
+          # Produce a clean, reproducible archive name per target
+          zip -r ../ffmpeg-${{ matrix.triplet }}.zip *
         shell: bash
 
-      - name: Upload Release
+      - name: Upload release
         uses: softprops/action-gh-release@v1
         with:
-          files: ffmpeg-${{ matrix.os }}-${{ matrix.arch }}.zip
+          files: ffmpeg-${{ matrix.triplet }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
