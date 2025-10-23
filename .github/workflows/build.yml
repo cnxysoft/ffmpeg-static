@@ -64,11 +64,11 @@ jobs:
             sudo apt-get install -y \
               gcc-multilib g++-multilib \
               yasm nasm pkg-config build-essential \
-              libx264-dev:i386 libgnutls28-dev:i386 libunistring-dev:i386
+              libx264-dev:i386 libssl-dev:i386
           else
             sudo apt-get install -y \
               yasm nasm pkg-config build-essential \
-              libx264-dev libgnutls28-dev libunistring-dev
+              libx264-dev libssl-dev
           fi
 
       - name: Install deps (Linux ARM/ARM64)
@@ -78,12 +78,12 @@ jobs:
           sudo apt-get install -y yasm nasm pkg-config build-essential \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
             gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-            libgnutls28-dev libunistring-dev
+            libssl-dev
 
       # macOS 依赖
       - name: Install deps (macOS)
         if: runner.os == 'macOS'
-        run: brew install yasm nasm x264 gnutls
+        run: brew install yasm nasm x264 openssl
 
       # Windows 依赖
       - name: Install deps (Windows)
@@ -92,6 +92,15 @@ jobs:
 
       - name: Install deps (Windows 386 cross)
         if: matrix.triplet == 'windows-386'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64-i686 g++-mingw-w64-i686 \
+                                  binutils-mingw-w64-i686 mingw-w64-i686-dev \
+                                  yasm nasm pkg-config libx264-dev \
+                                  binutils-mingw-w64-i686 mingw-w64-i686-dev
+
+      - name: Install deps (Windows arm/arm64 cross)
+        if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-mingw-w64-i686 g++-mingw-w64-i686 \
@@ -151,6 +160,30 @@ jobs:
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig" >> $GITHUB_ENV
 
+      - name: Build OpenSSL 3 (Windows ARM/ARM64)
+        if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
+        run: |
+          if [ "${{ matrix.triplet }}" = "windows-arm64" ]; then
+            CROSS=aarch64-w64-mingw32
+            PREFIX=$HOME/openssl-winarm64
+          else
+            CROSS=armv7-w64-mingw32
+            PREFIX=$HOME/openssl-winarm
+          fi
+
+          wget https://www.openssl.org/source/openssl-3.3.2.tar.gz
+          tar -xf openssl-3.3.2.tar.gz
+          cd openssl-3.3.2
+
+          ./Configure mingw64 --cross-compile-prefix=$CROSS- \
+            --prefix=$PREFIX --openssldir=$PREFIX/ssl \
+            no-shared no-tests
+
+          make -j$(nproc)
+          make install_sw
+
+          echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
+
       - name: Build and install x264 (Windows arm cross)
         if: matrix.triplet == 'windows-arm'
         run: |
@@ -196,7 +229,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-gnutls --enable-gpl --enable-libx264
+                --enable-version3 --enable-openssl  --enable-gpl --enable-libx264
               ;;
             linux-arm)
               PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig \
@@ -210,7 +243,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-gnutls --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-version3 --enable-openssl  --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             linux-arm64)
               PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig \
@@ -224,7 +257,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-gnutls --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-version3 --enable-openssl  --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             windows-386)
               PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig \
@@ -238,7 +271,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-gnutls --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-version3 --enable-openssl  --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             windows-arm)
               PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig \
@@ -252,7 +285,8 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-gnutls --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-version3 --enable-openssl  --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
+                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
               ;;
             windows-arm64)
               PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig \
@@ -266,7 +300,8 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-gnutls --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-version3 --enable-openssl  --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
+                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
               ;;
             *)
               ./configure --prefix=$PWD/build \
@@ -279,7 +314,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-gnutls --enable-gpl --enable-libx264
+                --enable-version3 --enable-openssl  --enable-gpl --enable-libx264
               ;;
           esac
 
