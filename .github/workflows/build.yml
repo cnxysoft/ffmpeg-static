@@ -113,7 +113,12 @@ jobs:
         run: |
           curl -L -o llvm-mingw.tar.xz https://github.com/mstorsjo/llvm-mingw/releases/download/20240820/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64.tar.xz
           tar -xf llvm-mingw.tar.xz
-          echo "$PWD/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64/bin" >> $GITHUB_PATH
+          TOOLCHAIN=$PWD/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64
+          echo "$TOOLCHAIN/bin" >> $GITHUB_PATH
+
+          for triplet in x86_64-w64-mingw32 i686-w64-mingw32 aarch64-w64-mingw32 armv7-w64-mingw32; do
+            ln -s $TOOLCHAIN/bin/llvm-strings $TOOLCHAIN/bin/${triplet}-strings
+          done
 
       - name: Build and install x264 (Linux arm cross)
         if: matrix.triplet == 'linux-arm'
