@@ -252,20 +252,16 @@ jobs:
               CONF=mingw64
               PREFIX=$HOME/openssl-winarm
               EXTRA="no-asm no-shared no-tests"
-              RC=llvm-windres
-              WINDRES=llvm-windres
-              RCFLAGS="--target=pe-arm"
-              WINDRESFLAGS="--target=pe-arm"
+              RC="llvm-windres --target=pe-arm"
+              WINDRES="llvm-windres --target=pe-arm"
               ;;
             windows-arm64)
               CROSS=aarch64-w64-mingw32
               CONF=mingw64
               PREFIX=$HOME/openssl-winarm64
               EXTRA="no-asm no-shared no-tests"
-              RC=llvm-windres
-              WINDRES=llvm-windres
-              RCFLAGS="--target=pe-arm64"
-              WINDRESFLAGS="--target=pe-arm64"
+              RC="llvm-windres --target=pe-arm64"
+              WINDRES="llvm-windres --target=pe-arm64"
               ;;
             windows-386)
               CROSS=i686-w64-mingw32
@@ -275,7 +271,7 @@ jobs:
               ;;
           esac
 
-          export RC WINDRES RCFLAGS WINDRESFLAGS
+          export RC WINDRES
 
           curl -LO https://www.openssl.org/source/openssl-3.3.2.tar.gz
           tar -xf openssl-3.3.2.tar.gz
