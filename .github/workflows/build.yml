@@ -235,7 +235,9 @@ jobs:
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             linux-arm)
-              PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig \
+              export PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig
+              pkg-config --modversion x264
+              dpkg -L libx264-dev:armhf | grep x264.pc
               ./configure --arch=arm --target-os=linux --cross-prefix=arm-linux-gnueabihf- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -249,7 +251,9 @@ jobs:
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             linux-arm64)
-              PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig \
+              export PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig
+              pkg-config --modversion x264
+              dpkg -L libx264-dev:arm64 | grep x264.pc
               ./configure --arch=aarch64 --target-os=linux --cross-prefix=aarch64-linux-gnu- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -263,7 +267,9 @@ jobs:
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             windows-386)
-              PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig \
+              export PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig
+              pkg-config --modversion x264
+              dpkg -L libx264-dev:i386 | grep x264.pc
               ./configure --arch=i686 --target-os=win32 --cross-prefix=i686-w64-mingw32- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -277,7 +283,9 @@ jobs:
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             windows-arm)
-              PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig \
+              export PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig
+              pkg-config --modversion x264
+              dpkg -L libx264-dev:armhf | grep x264.pc
               ./configure --arch=arm --target-os=win32 --cross-prefix=armv7-w64-mingw32- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -292,7 +300,9 @@ jobs:
                 --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
               ;;
             windows-arm64)
-              PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig \
+              export PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig
+              pkg-config --modversion x264
+              dpkg -L libx264-dev:arm64 | grep x264.pc
               ./configure --arch=arm64 --target-os=win32 --cross-prefix=aarch64-w64-mingw32- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
