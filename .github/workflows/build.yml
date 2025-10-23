@@ -232,6 +232,7 @@ jobs:
 
       - name: Build OpenSSL 3 (cross targets)
         if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64' || matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64' || matrix.triplet == 'windows-386'
+        shell: bash
         run: |
           case "${{ matrix.triplet }}" in
             linux-arm)
@@ -250,15 +251,17 @@ jobs:
               CROSS=armv7-w64-mingw32
               CONF=mingw64
               PREFIX=$HOME/openssl-winarm
-              # 强制禁用 ASM，避免误用 x86_64 汇编
-              EXTRA="no-asm no-tests"
+              EXTRA="no-asm no-shared no-tests"
+              export RC=llvm-windres
+              export WINDRES=llvm-windres
               ;;
             windows-arm64)
               CROSS=aarch64-w64-mingw32
               CONF=mingw64
               PREFIX=$HOME/openssl-winarm64
-              # 强制禁用 ASM，避免误用 x86_64 汇编
-              EXTRA="no-asm no-tests"
+              EXTRA="no-asm no-shared no-tests"
+              export RC=llvm-windres
+              export WINDRES=llvm-windres
               ;;
             windows-386)
               CROSS=i686-w64-mingw32
@@ -268,15 +271,15 @@ jobs:
               ;;
           esac
 
-          wget https://www.openssl.org/source/openssl-3.3.2.tar.gz
+          curl -LO https://www.openssl.org/source/openssl-3.3.2.tar.gz
           tar -xf openssl-3.3.2.tar.gz
           cd openssl-3.3.2
 
-          ./Configure $CONF no-shared $EXTRA \
+          ./Configure $CONF $EXTRA \
             --cross-compile-prefix=$CROSS- \
             --prefix=$PREFIX --openssldir=$PREFIX/ssl
 
-          make -j$(nproc)
+          make -j"$(nproc)"
           make install_sw
 
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
