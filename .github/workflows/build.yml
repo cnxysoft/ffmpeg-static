@@ -87,6 +87,20 @@ jobs:
                                   binutils-mingw-w64-i686 mingw-w64-i686-dev \
                                   yasm nasm pkg-config libssl-dev libx264-dev
 
+      - name: Build and install x264 (Windows 386 cross)
+        if: matrix.triplet == 'windows-386'
+        run: |
+          git clone --depth 1 https://code.videolan.org/videolan/x264.git
+          cd x264
+          ./configure \
+            --host=i686-w64-mingw32 \
+            --enable-static \
+            --disable-cli \
+            --prefix=$HOME/x264-i686
+          make -j"$(nproc)"
+          make install
+          echo "PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig" >> $GITHUB_ENV
+
       - name: Configure FFmpeg
         run: |
           case "${{ matrix.triplet }}" in
@@ -140,7 +154,8 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
+                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 \
+                PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig
               ;;
             windows-arm)
               ./configure --arch=arm --target-os=win32 --cross-prefix=armv7-w64-mingw32- --prefix=$PWD/build \
