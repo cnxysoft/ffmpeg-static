@@ -161,56 +161,6 @@ jobs:
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig" >> $GITHUB_ENV
 
-      - name: Build OpenSSL 3 (Linux ARM/ARM64)
-        if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64'
-        run: |
-          if [ "${{ matrix.triplet }}" = "linux-arm64" ]; then
-            CROSS=aarch64-linux-gnu
-            PREFIX=$HOME/openssl-arm64
-            CONF=linux-aarch64
-          else
-            CROSS=arm-linux-gnueabihf
-            PREFIX=$HOME/openssl-arm
-            CONF=linux-armv4
-          fi
-
-          wget https://www.openssl.org/source/openssl-3.3.2.tar.gz
-          tar -xf openssl-3.3.2.tar.gz
-          cd openssl-3.3.2
-
-          ./Configure $CONF no-shared no-tests \
-            --cross-compile-prefix=$CROSS- \
-            --prefix=$PREFIX --openssldir=$PREFIX/ssl
-
-          make -j$(nproc)
-          make install_sw
-
-          echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
-
-      - name: Build OpenSSL 3 (Windows ARM/ARM64)
-        if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
-        run: |
-          if [ "${{ matrix.triplet }}" = "windows-arm64" ]; then
-            CROSS=aarch64-w64-mingw32
-            PREFIX=$HOME/openssl-winarm64
-          else
-            CROSS=armv7-w64-mingw32
-            PREFIX=$HOME/openssl-winarm
-          fi
-
-          wget https://www.openssl.org/source/openssl-3.3.2.tar.gz
-          tar -xf openssl-3.3.2.tar.gz
-          cd openssl-3.3.2
-
-          ./Configure mingw64 no-shared no-tests no-asm \
-            --cross-compile-prefix=$CROSS- \
-            --prefix=$PREFIX --openssldir=$PREFIX/ssl
-
-          make -j$(nproc)
-          make install_sw
-
-          echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
-
       - name: Build and install x264 (Windows arm cross)
         if: matrix.triplet == 'windows-arm'
         run: |
@@ -240,6 +190,50 @@ jobs:
           make -j"$(nproc)"
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig" >> $GITHUB_ENV
+
+      - name: Build OpenSSL 3 (cross targets)
+        if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64' || matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64' || matrix.triplet == 'windows-386'
+        run: |
+          case "${{ matrix.triplet }}" in
+            linux-arm)
+              CROSS=arm-linux-gnueabihf
+              CONF=linux-armv4
+              PREFIX=$HOME/openssl-arm
+              ;;
+            linux-arm64)
+              CROSS=aarch64-linux-gnu
+              CONF=linux-aarch64
+              PREFIX=$HOME/openssl-arm64
+              ;;
+            windows-arm)
+              CROSS=armv7-w64-mingw32
+              CONF=mingw64
+              PREFIX=$HOME/openssl-winarm
+              ;;
+            windows-arm64)
+              CROSS=aarch64-w64-mingw32
+              CONF=mingw64
+              PREFIX=$HOME/openssl-winarm64
+              ;;
+            windows-386)
+              CROSS=i686-w64-mingw32
+              CONF=mingw
+              PREFIX=$HOME/openssl-win32
+              ;;
+          esac
+
+          wget https://www.openssl.org/source/openssl-3.3.2.tar.gz
+          tar -xf openssl-3.3.2.tar.gz
+          cd openssl-3.3.2
+
+          ./Configure $CONF no-shared no-tests \
+            --cross-compile-prefix=$CROSS- \
+            --prefix=$PREFIX --openssldir=$PREFIX/ssl
+
+          make -j$(nproc)
+          make install_sw
+
+          echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
       - name: Configure FFmpeg
         shell: bash
@@ -308,7 +302,7 @@ jobs:
                 --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
               ;;
             windows-386)
-              export PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig
+              export PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
               pkg-config --modversion x264
               ./configure --arch=i686 --target-os=win32 --cross-prefix=i686-w64-mingw32- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
@@ -320,7 +314,8 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
+                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
               ;;
             windows-arm)
               export PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
