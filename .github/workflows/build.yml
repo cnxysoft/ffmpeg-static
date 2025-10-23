@@ -125,6 +125,7 @@ jobs:
             --cross-prefix=arm-linux-gnueabihf- \
             --enable-static \
             --disable-cli \
+            --enable-pic \
             --prefix=$HOME/x264-arm
           make -j"$(nproc)"
           make install
