@@ -237,8 +237,9 @@ jobs:
             linux-arm)
               export PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig
               pkg-config --modversion x264
-              arm-linux-gnueabihf-gcc -print-sysroot
-              find $(arm-linux-gnueabihf-gcc -print-sysroot) -name "libpthread.*"
+              dpkg -L libc6-dev-armhf-cross | grep libpthread
+              dpkg -L libc6-dev-armhf-cross | grep libm
+              dpkg -L libc6-dev-armhf-cross | grep libdl
               ./configure --arch=arm --target-os=linux --cross-prefix=arm-linux-gnueabihf- --prefix=$PWD/build \
                 --cc=arm-linux-gnueabihf-gcc --cxx=arm-linux-gnueabihf-g++ \
                 --enable-cross-compile --enable-static --disable-shared \
