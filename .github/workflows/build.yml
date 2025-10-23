@@ -187,6 +187,7 @@ jobs:
                 --enable-openssl --enable-gpl --enable-version3 --enable-libx264
               ;;
             linux-arm)
+              PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig \
               ./configure --arch=arm --target-os=linux --cross-prefix=arm-linux-gnueabihf- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -197,10 +198,10 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 \
-                PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig
+                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
               ;;
             linux-arm64)
+              PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig \
               ./configure --arch=aarch64 --target-os=linux --cross-prefix=aarch64-linux-gnu- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -211,10 +212,10 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 \
-                PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig
+                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
               ;;
             windows-386)
+              PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig \
               ./configure --arch=i686 --target-os=win32 --cross-prefix=i686-w64-mingw32- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -225,10 +226,10 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 \
-                PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig
+                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
               ;;
             windows-arm)
+              PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig \
               ./configure --arch=arm --target-os=win32 --cross-prefix=armv7-w64-mingw32- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -239,10 +240,10 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 \
-                PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig
+                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
               ;;
             windows-arm64)
+              PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig \
               ./configure --arch=arm64 --target-os=win32 --cross-prefix=aarch64-w64-mingw32- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -253,8 +254,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 \
-                PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig
+                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
               ;;
             *)
               ./configure --prefix=$PWD/build \
