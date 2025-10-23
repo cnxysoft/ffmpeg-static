@@ -188,6 +188,7 @@ jobs:
             --enable-static \
             --disable-cli \
             --prefix=$HOME/x264-win64
+          sed -i 's/-mstack-alignment=64//g' config.mak
           make -j"$(nproc)"
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-win64/lib/pkgconfig" >> $GITHUB_ENV
