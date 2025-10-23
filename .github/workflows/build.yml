@@ -186,6 +186,7 @@ jobs:
           AR=llvm-ar \
           RANLIB=llvm-ranlib \
           STRIP=llvm-strip \
+          CFLAGS="-D__USE_MINGW_ANSI_STDIO=1 -DNO_FSEEKO" \
           ./configure \
             --host=x86_64-w64-mingw32 \
             --cross-prefix=x86_64-w64-mingw32- \
