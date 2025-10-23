@@ -252,16 +252,16 @@ jobs:
               CONF=mingw64
               PREFIX=$HOME/openssl-winarm
               EXTRA="no-asm no-shared no-tests"
-              RC="llvm-windres --target=pe-arm"
-              WINDRES="llvm-windres --target=pe-arm"
+              RCFLAGS="--target=pe-arm"
+              WINDRESFLAGS="--target=pe-arm"
               ;;
             windows-arm64)
               CROSS=aarch64-w64-mingw32
               CONF=mingw64
               PREFIX=$HOME/openssl-winarm64
               EXTRA="no-asm no-shared no-tests"
-              RC="llvm-windres --target=pe-arm64"
-              WINDRES="llvm-windres --target=pe-arm64"
+              RCFLAGS="--target=pe-arm64"
+              WINDRESFLAGS="--target=pe-arm64"
               ;;
             windows-386)
               CROSS=i686-w64-mingw32
@@ -271,7 +271,26 @@ jobs:
               ;;
           esac
 
-          export RC WINDRES
+          # 1) 统一工具链为 LLVM（避免 GNU 前缀工具缺失）
+          export CC="${CROSS}-clang"
+          export AR="llvm-ar"
+          export RANLIB="llvm-ranlib"
+
+          # 2) 为 windres 建前缀别名，兼容 OpenSSL 的 CROSS 前缀化行为
+          #    注意：llvm-windres 在 $PATH 中（你已通过 GITHUB_PATH 添加过 TOOLCHAIN/bin）
+          LLVM_WINDRES="$(command -v llvm-windres)"
+          if [ -n "$LLVM_WINDRES" ]; then
+            # 既建 $(CROSS)-windres 也建 $(CROSS)-llvm-windres，两个都覆盖到
+            ln -sf "$LLVM_WINDRES" "$(dirname "$LLVM_WINDRES")/${CROSS}-windres"
+            ln -sf "$LLVM_WINDRES" "$(dirname "$LLVM_WINDRES")/${CROSS}-llvm-windres"
+            export RC="${CROSS}-llvm-windres"
+            export WINDRES="${CROSS}-llvm-windres"
+          else
+            echo "llvm-windres not found in PATH"; exit 1
+          fi
+
+          # 3) 传递目标架构 flags，避免默认的 pe-x86-64 插入
+          export RCFLAGS WINDRESFLAGS
 
           curl -LO https://www.openssl.org/source/openssl-3.3.2.tar.gz
           tar -xf openssl-3.3.2.tar.gz
@@ -281,7 +300,8 @@ jobs:
 
           ./Configure $CONF $EXTRA \
             --cross-compile-prefix=$CROSS- \
-            --prefix=$PREFIX --openssldir=$PREFIX/ssl
+            --prefix=$PREFIX --openssldir=$PREFIX/ssl \
+            WINDRES="$WINDRES" RC="$RC"
 
           make -j"$(nproc)"
           make install_sw
