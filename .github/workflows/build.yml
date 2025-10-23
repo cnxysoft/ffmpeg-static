@@ -248,7 +248,7 @@ jobs:
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 \
-                --extra-cflags="-I$HOME/x264-arm/include" --extra-ldflags="-L$HOME/x264-arm/lib -lx264 -lpthread -lm -ldl"
+                --extra-cflags="-I$HOME/x264-arm/include" --extra-ldflags="-L$HOME/x264-arm/lib -lx264 -lpthread -lm -ldl" || { echo "configure failed, dumping log"; cat ffbuild/config.log; exit 1; 
               ;;
             linux-arm64)
               export PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig
