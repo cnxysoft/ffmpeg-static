@@ -12,13 +12,20 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            arch: x86_64
+          # Windows
           - os: windows-latest
             arch: x86_64
-          - os: macos-latest
+          - os: windows-latest
+            arch: arm64
+          # Linux
+          - os: ubuntu-latest
             arch: x86_64
-          - os: macos-latest
+          - os: ubuntu-latest
+            arch: aarch64
+          # macOS
+          - os: macos-latest   # Intel
+            arch: x86_64
+          - os: macos-14       # Apple Silicon
             arch: arm64
 
     steps:
@@ -59,7 +66,12 @@ jobs:
         shell: bash
 
       - name: Build
-        run: make -j$(nproc)
+        run: |
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            make -j4   # macOS 降低并行度，避免 posix_spawn 错误
+          else
+            make -j$(nproc)
+          fi
         shell: bash
 
       - name: Install
