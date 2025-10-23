@@ -14,8 +14,6 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x86_64
-          - os: ubuntu-latest
-            arch: aarch64
           - os: windows-latest
             arch: x86_64
           - os: macos-latest
@@ -28,20 +26,26 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: FFmpeg/FFmpeg
-          ref: master   # 或者指定版本 tag
+          ref: master   # 或者指定 tag
 
-      - name: Install dependencies
+      # Linux 依赖
+      - name: Install deps (Linux)
+        if: runner.os == 'Linux'
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            sudo apt-get update
-            sudo apt-get install -y yasm nasm pkg-config build-essential
-          fi
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            brew install yasm nasm
-          fi
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            choco install make nasm yasm
-          fi
+          sudo apt-get update
+          sudo apt-get install -y yasm nasm pkg-config build-essential
+
+      # macOS 依赖
+      - name: Install deps (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install yasm nasm
+
+      # Windows 依赖
+      - name: Install deps (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install make nasm yasm
 
       - name: Configure FFmpeg
         run: |
@@ -52,17 +56,21 @@ jobs:
             --disable-doc \
             --disable-debug \
             --prefix=$PWD/build
+        shell: bash
 
       - name: Build
         run: make -j$(nproc)
+        shell: bash
 
       - name: Install
         run: make install
+        shell: bash
 
       - name: Package
         run: |
           cd build
           zip -r ../ffmpeg-${{ matrix.os }}-${{ matrix.arch }}.zip *
+        shell: bash
 
       - name: Upload Release
         uses: softprops/action-gh-release@v1
