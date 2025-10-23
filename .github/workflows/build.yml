@@ -177,7 +177,7 @@ jobs:
 
           ./Configure mingw64 --cross-compile-prefix=$CROSS- \
             --prefix=$PREFIX --openssldir=$PREFIX/ssl \
-            no-shared no-tests
+            no-shared no-tests no-asm
 
           make -j$(nproc)
           make install_sw
