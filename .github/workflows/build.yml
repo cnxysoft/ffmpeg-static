@@ -254,7 +254,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl --enable-gpl --enable-libx264
+                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config=pkg-config
               ret=$?
               set -e
               if [ $ret -ne 0 ]; then
