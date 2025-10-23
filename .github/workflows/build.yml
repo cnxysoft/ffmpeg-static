@@ -103,6 +103,7 @@ jobs:
           echo "PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Configure FFmpeg
+        shell: bash
         run: |
           case "${{ matrix.triplet }}" in
             linux-386)
