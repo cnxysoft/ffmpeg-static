@@ -235,6 +235,14 @@ jobs:
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             linux-arm)
+              ls -l $HOME/x264-arm/include/x264.h
+              ls -l $HOME/x264-arm/lib/libx264.a
+              ls -l $HOME/x264-arm/lib/pkgconfig/x264.pc
+              grep prefix $HOME/x264-arm/lib/pkgconfig/x264.pc
+              grep Libs $HOME/x264-arm/lib/pkgconfig/x264.pc
+              PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig pkg-config --modversion x264
+              PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig pkg-config --cflags x264
+              PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig pkg-config --libs x264
               ./configure --arch=arm --target-os=linux --cross-prefix=arm-linux-gnueabihf- --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
