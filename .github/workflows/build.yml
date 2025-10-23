@@ -219,6 +219,7 @@ jobs:
         run: |
           case "${{ matrix.triplet }}" in
             linux-386)
+              PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
               ./configure --arch=i686 --target-os=linux --prefix=$PWD/build \
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
