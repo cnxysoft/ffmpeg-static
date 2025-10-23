@@ -69,7 +69,7 @@ jobs:
             --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
             --enable-muxer=mp4 --enable-muxer=gif \
             --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
-            --enable-encoder=libx264 --enable-encoder=aac
+            --enable-encoder=libx264 --enable-encoder=aac \
             --prefix=$PWD/build
         shell: bash
 
