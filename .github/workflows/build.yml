@@ -196,6 +196,7 @@ jobs:
           echo "#define fseeko _fseeki64" >> config.h
           echo "#define ftello _ftelli64" >> config.h
           make -j"$(nproc)"
+          ls -lh libx264.a
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-win64/lib/pkgconfig" >> $GITHUB_ENV
 
