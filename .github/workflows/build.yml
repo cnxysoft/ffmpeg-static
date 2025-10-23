@@ -235,7 +235,7 @@ jobs:
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
             linux-arm)
-              export PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig pkg-config
+              export PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig
               pkg-config --modversion x264
               arm-linux-gnueabihf-gcc -print-sysroot
               find $(arm-linux-gnueabihf-gcc -print-sysroot) -name "libpthread.*"
