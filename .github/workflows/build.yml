@@ -87,6 +87,36 @@ jobs:
                                   binutils-mingw-w64-i686 mingw-w64-i686-dev \
                                   yasm nasm pkg-config libssl-dev libx264-dev
 
+      - name: Build and install x264 (Linux arm cross)
+        if: matrix.triplet == 'linux-arm'
+        run: |
+          git clone --depth 1 https://code.videolan.org/videolan/x264.git
+          cd x264
+          ./configure \
+            --host=arm-linux-gnueabihf \
+            --cross-prefix=arm-linux-gnueabihf- \
+            --enable-static \
+            --disable-cli \
+            --prefix=$HOME/x264-arm
+          make -j"$(nproc)"
+          make install
+          echo "PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig" >> $GITHUB_ENV
+
+      - name: Build and install x264 (Linux arm64 cross)
+        if: matrix.triplet == 'linux-arm64'
+        run: |
+          git clone --depth 1 https://code.videolan.org/videolan/x264.git
+          cd x264
+          ./configure \
+            --host=aarch64-linux-gnu \
+            --cross-prefix=aarch64-linux-gnu- \
+            --enable-static \
+            --disable-cli \
+            --prefix=$HOME/x264-arm64
+          make -j"$(nproc)"
+          make install
+          echo "PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig" >> $GITHUB_ENV
+
       - name: Build and install x264 (Windows 386 cross)
         if: matrix.triplet == 'windows-386'
         run: |
@@ -101,6 +131,36 @@ jobs:
           make -j"$(nproc)"
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig" >> $GITHUB_ENV
+
+      - name: Build and install x264 (Windows arm cross)
+        if: matrix.triplet == 'windows-arm'
+        run: |
+          git clone --depth 1 https://code.videolan.org/videolan/x264.git
+          cd x264
+          ./configure \
+            --host=arm-w64-mingw32 \
+            --cross-prefix=arm-w64-mingw32- \
+            --enable-static \
+            --disable-cli \
+            --prefix=$HOME/x264-winarm
+          make -j"$(nproc)"
+          make install
+          echo "PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig" >> $GITHUB_ENV
+
+      - name: Build and install x264 (Windows arm64 cross)
+        if: matrix.triplet == 'windows-arm64'
+        run: |
+          git clone --depth 1 https://code.videolan.org/videolan/x264.git
+          cd x264
+          ./configure \
+            --host=aarch64-w64-mingw32 \
+            --cross-prefix=aarch64-w64-mingw32- \
+            --enable-static \
+            --disable-cli \
+            --prefix=$HOME/x264-winarm64
+          make -j"$(nproc)"
+          make install
+          echo "PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Configure FFmpeg
         shell: bash
@@ -121,7 +181,7 @@ jobs:
               ;;
             linux-arm)
               ./configure --arch=arm --target-os=linux --cross-prefix=arm-linux-gnueabihf- --prefix=$PWD/build \
-                --enable-static --disable-shared \
+                --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-avdevice --disable-avfilter \
                 --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
@@ -130,11 +190,12 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
+                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 \
+                PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig
               ;;
             linux-arm64)
               ./configure --arch=aarch64 --target-os=linux --cross-prefix=aarch64-linux-gnu- --prefix=$PWD/build \
-                --enable-static --disable-shared \
+                --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-avdevice --disable-avfilter \
                 --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
@@ -143,7 +204,8 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
+                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 \
+                PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig
               ;;
             windows-386)
               ./configure --arch=i686 --target-os=win32 --cross-prefix=i686-w64-mingw32- --prefix=$PWD/build \
@@ -170,7 +232,8 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
+                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 \
+                PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig
               ;;
             windows-arm64)
               ./configure --arch=arm64 --target-os=win32 --cross-prefix=aarch64-w64-mingw32- --prefix=$PWD/build \
@@ -183,7 +246,8 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-openssl --enable-gpl --enable-version3 --enable-libx264
+                --enable-openssl --enable-gpl --enable-version3 --enable-libx264 \
+                PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig
               ;;
             *)
               ./configure --prefix=$PWD/build \
