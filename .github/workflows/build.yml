@@ -163,6 +163,7 @@ jobs:
 
       - name: Build and install x264 (Windows amd64 cross)
         if: matrix.triplet == 'windows-amd64'
+        shell: bash
         run: |
           git clone --depth 1 https://code.videolan.org/videolan/x264.git
           cd x264
