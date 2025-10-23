@@ -62,13 +62,23 @@ jobs:
             --disable-programs \
             --disable-doc \
             --disable-debug \
+            --disable-avdevice \
+            --disable-avfilter \
+            --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
+            --enable-protocol=http --enable-protocol=https \
+            --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
+            --enable-muxer=mp4 --enable-muxer=gif \
+            --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
+            --enable-encoder=libx264 --enable-encoder=aac
             --prefix=$PWD/build
         shell: bash
 
       - name: Build
         run: |
           if [[ "${{ runner.os }}" == "macOS" ]]; then
-            make -j4   # macOS 降低并行度，避免 posix_spawn 错误
+            make -j4
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            mingw32-make -j1
           else
             make -j$(nproc)
           fi
