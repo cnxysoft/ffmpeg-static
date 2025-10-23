@@ -161,6 +161,21 @@ jobs:
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig" >> $GITHUB_ENV
 
+      - name: Build and install x264 (Windows amd64 cross)
+        if: matrix.triplet == 'windows-amd64'
+        run: |
+          git clone --depth 1 https://code.videolan.org/videolan/x264.git
+          cd x264
+          ./configure \
+            --host=x86_64-w64-mingw32 \
+            --cross-prefix=x86_64-w64-mingw32- \
+            --enable-static \
+            --disable-cli \
+            --prefix=$HOME/x264-win64
+          make -j"$(nproc)"
+          make install
+          echo "PKG_CONFIG_PATH=$HOME/x264-win64/lib/pkgconfig" >> $GITHUB_ENV
+
       - name: Build and install x264 (Windows arm cross)
         if: matrix.triplet == 'windows-arm'
         run: |
