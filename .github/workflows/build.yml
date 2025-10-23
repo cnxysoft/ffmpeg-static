@@ -110,6 +110,7 @@ jobs:
 
       - name: Install LLVM-mingw (all Windows cross targets)
         if: startsWith(matrix.triplet, 'windows-')
+        shell: bash
         run: |
           curl -L -o llvm-mingw.tar.xz https://github.com/mstorsjo/llvm-mingw/releases/download/20240820/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64.tar.xz
           tar -xf llvm-mingw.tar.xz
