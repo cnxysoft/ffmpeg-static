@@ -239,6 +239,9 @@ jobs:
               pkg-config --modversion x264
               pkg-config --cflags x264
               pkg-config --libs x264
+              arm-linux-gnueabihf-objdump -f libx264.a | head
+              file /usr/arm-linux-gnueabihf/lib/libpthread.a
+              set +e
               ./configure --arch=arm --target-os=linux --cross-prefix=arm-linux-gnueabihf- --prefix=$PWD/build \
                 --cc=arm-linux-gnueabihf-gcc --cxx=arm-linux-gnueabihf-g++ \
                 --enable-cross-compile --enable-static --disable-shared \
@@ -251,6 +254,13 @@ jobs:
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264
+              ret=$?
+              set -e
+              if [ $ret -ne 0 ]; then
+                echo "=== CONFIG.LOG (last 100 lines) ==="
+                tail -n 100 ffbuild/config.log
+                exit $ret
+              fi
               ;;
             linux-arm64)
               export PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig
