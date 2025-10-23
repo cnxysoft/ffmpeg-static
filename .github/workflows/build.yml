@@ -58,7 +58,18 @@ jobs:
         if: matrix.triplet == 'linux-386' || matrix.triplet == 'linux-amd64'
         run: |
           sudo apt-get update
-          sudo apt-get install -y yasm nasm pkg-config build-essential gcc-multilib g++-multilib libx264-dev
+          if [ "${{ matrix.triplet }}" = "linux-386" ]; then
+            sudo dpkg --add-architecture i386
+            sudo apt-get update
+            sudo apt-get install -y \
+              gcc-multilib g++-multilib \
+              yasm nasm pkg-config build-essential \
+              libx264-dev:i386 libgnutls28-dev:i386 libunistring-dev:i386
+          else
+            sudo apt-get install -y \
+              yasm nasm pkg-config build-essential \
+              libx264-dev libgnutls28-dev libunistring-dev
+          fi
 
       - name: Install deps (Linux ARM/ARM64)
         if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64'
@@ -67,12 +78,12 @@ jobs:
           sudo apt-get install -y yasm nasm pkg-config build-essential \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
             gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-           
+            libgnutls28-dev libunistring-dev
 
       # macOS 依赖
       - name: Install deps (macOS)
         if: runner.os == 'macOS'
-        run: brew install yasm nasm x264 openssl
+        run: brew install yasm nasm x264 gnutls
 
       # Windows 依赖
       - name: Install deps (Windows)
@@ -85,7 +96,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-mingw-w64-i686 g++-mingw-w64-i686 \
                                   binutils-mingw-w64-i686 mingw-w64-i686-dev \
-                                  yasm nasm pkg-config libx264-dev
+                                  yasm nasm pkg-config libx264-dev \
+                                  binutils-mingw-w64-i686 mingw-w64-i686-dev
 
       - name: Install LLVM-mingw (Windows ARM/ARM64)
         if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
