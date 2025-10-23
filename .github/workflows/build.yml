@@ -117,7 +117,7 @@ jobs:
           echo "$TOOLCHAIN/bin" >> $GITHUB_PATH
 
           for triplet in x86_64-w64-mingw32 i686-w64-mingw32 aarch64-w64-mingw32 armv7-w64-mingw32; do
-            ln -s $TOOLCHAIN/bin/llvm-strings $TOOLCHAIN/bin/${triplet}-strings
+            ln -sf $TOOLCHAIN/bin/llvm-strings $TOOLCHAIN/bin/${triplet}-strings
           done
 
       - name: Build and install x264 (Linux arm cross)
