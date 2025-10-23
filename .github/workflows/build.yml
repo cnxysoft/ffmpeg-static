@@ -239,7 +239,8 @@ jobs:
               pkg-config --modversion x264
               pkg-config --cflags x264
               pkg-config --libs x264
-              arm-linux-gnueabihf-objdump -f libx264.a | head
+              arm-linux-gnueabihf-objdump -f $HOME/x264-arm/lib/libx264.a | head
+              file $HOME/x264-arm/lib/libx264.a
               file /usr/arm-linux-gnueabihf/lib/libpthread.a
               set +e
               ./configure --arch=arm --target-os=linux --cross-prefix=arm-linux-gnueabihf- --prefix=$PWD/build \
