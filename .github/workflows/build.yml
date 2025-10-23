@@ -54,12 +54,17 @@ jobs:
           ref: n7.1   # 或 master
 
       # Linux 依赖
-      - name: Install deps (Linux)
-        if: runner.os == 'Linux'
+      - name: Install deps (Linux x86/x86_64)
+        if: matrix.triplet == 'linux-386' || matrix.triplet == 'linux-amd64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yasm nasm pkg-config build-essential gcc-multilib g++-multilib libssl-dev libx264-dev
+
+      - name: Install deps (Linux ARM/ARM64 + Windows ARM/ARM64)
+        if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64' || matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
         run: |
           sudo apt-get update
           sudo apt-get install -y yasm nasm pkg-config build-essential \
-            gcc-multilib g++-multilib \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
             gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
             mingw-w64 libssl-dev libx264-dev
