@@ -182,6 +182,10 @@ jobs:
         run: |
           git clone --depth 1 https://code.videolan.org/videolan/x264.git
           cd x264
+          CC=x86_64-w64-mingw32-clang \
+          AR=llvm-ar \
+          RANLIB=llvm-ranlib \
+          STRIP=llvm-strip \
           ./configure \
             --host=x86_64-w64-mingw32 \
             --cross-prefix=x86_64-w64-mingw32- \
