@@ -199,26 +199,33 @@ jobs:
               CROSS=arm-linux-gnueabihf
               CONF=linux-armv4
               PREFIX=$HOME/openssl-arm
+              EXTRA="no-tests"
               ;;
             linux-arm64)
               CROSS=aarch64-linux-gnu
               CONF=linux-aarch64
               PREFIX=$HOME/openssl-arm64
+              EXTRA="no-tests"
               ;;
             windows-arm)
               CROSS=armv7-w64-mingw32
               CONF=mingw64
               PREFIX=$HOME/openssl-winarm
+              # 强制禁用 ASM，避免误用 x86_64 汇编
+              EXTRA="no-asm no-tests"
               ;;
             windows-arm64)
               CROSS=aarch64-w64-mingw32
               CONF=mingw64
               PREFIX=$HOME/openssl-winarm64
+              # 强制禁用 ASM，避免误用 x86_64 汇编
+              EXTRA="no-asm no-tests"
               ;;
             windows-386)
               CROSS=i686-w64-mingw32
               CONF=mingw
               PREFIX=$HOME/openssl-win32
+              EXTRA="no-tests"
               ;;
           esac
 
@@ -226,7 +233,7 @@ jobs:
           tar -xf openssl-3.3.2.tar.gz
           cd openssl-3.3.2
 
-          ./Configure $CONF no-shared no-tests \
+          ./Configure $CONF no-shared $EXTRA \
             --cross-compile-prefix=$CROSS- \
             --prefix=$PREFIX --openssldir=$PREFIX/ssl
 
