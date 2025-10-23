@@ -94,6 +94,7 @@ jobs:
           cd x264
           ./configure \
             --host=i686-w64-mingw32 \
+            --cross-prefix=i686-w64-mingw32- \
             --enable-static \
             --disable-cli \
             --prefix=$HOME/x264-i686
