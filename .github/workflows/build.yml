@@ -219,7 +219,6 @@ jobs:
         run: |
           case "${{ matrix.triplet }}" in
             linux-386)
-              PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig:$PKG_CONFIG_PATH \
               ./configure --arch=i686 --target-os=linux --prefix=$PWD/build \
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -230,7 +229,8 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
+                --extra-cflags="-I/usr/include" --extra-ldflags="-L/usr/lib/i386-linux-gnu"
               ;;
             linux-arm)
               PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig \
