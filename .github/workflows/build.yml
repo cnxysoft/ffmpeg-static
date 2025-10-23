@@ -130,6 +130,18 @@ jobs:
             ln -sf $TOOLCHAIN/bin/llvm-strings $TOOLCHAIN/bin/${triplet}-strings
           done
 
+      - name: Create LLVM-mingw symlinks for Windows ARM
+        if: (matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64') && runner.os == 'Linux'
+        shell: bash
+        run: |
+          TOOLCHAIN=$PWD/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64
+          # 为 Windows ARM 目标创建必要的符号链接
+          ln -sf $TOOLCHAIN/bin/llvm-windres $TOOLCHAIN/bin/armv7-w64-mingw32-windres
+          ln -sf $TOOLCHAIN/bin/llvm-windres $TOOLCHAIN/bin/aarch64-w64-mingw32-windres
+          # 确保这些工具可用
+          ln -sf $TOOLCHAIN/bin/clang $TOOLCHAIN/bin/armv7-w64-mingw32-clang
+          ln -sf $TOOLCHAIN/bin/clang $TOOLCHAIN/bin/aarch64-w64-mingw32-clang
+
       - name: Build and install x264 (Linux arm cross)
         if: matrix.triplet == 'linux-arm'
         run: |
