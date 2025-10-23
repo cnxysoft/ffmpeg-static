@@ -108,8 +108,8 @@ jobs:
                                   yasm nasm pkg-config libx264-dev \
                                   binutils-mingw-w64-i686 mingw-w64-i686-dev
 
-      - name: Install LLVM-mingw (Windows ARM/ARM64)
-        if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
+      - name: Install LLVM-mingw (all Windows cross targets)
+        if: startsWith(matrix.triplet, 'windows-')
         run: |
           wget https://github.com/mstorsjo/llvm-mingw/releases/download/20240820/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64.tar.xz
           tar -xf llvm-mingw-*.tar.xz
