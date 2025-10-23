@@ -146,7 +146,7 @@ jobs:
           cd x264
           ./configure \
             --host=arm-w64-mingw32 \
-            --cross-prefix=arm-w64-mingw32- \
+            --cross-prefix=armv7-w64-mingw32- \
             --enable-static \
             --disable-cli \
             --prefix=$HOME/x264-winarm
