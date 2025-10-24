@@ -480,6 +480,12 @@ jobs:
               ;;
             *)
               export PKG_CONFIG_PATH=$HOME/x264-win64/lib/pkgconfig:$PKG_CONFIG_PATH
+              # 验证 pkg-config 能找到所有库
+              echo "x264 version:"
+              pkg-config --modversion x264
+              echo "OpenSSL version:"
+              pkg-config --modversion openssl
+              set +e
               ./configure --prefix=$PWD/build \
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -490,7 +496,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl --enable-gpl --enable-libx264
+                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
           esac
 
