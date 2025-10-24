@@ -316,6 +316,7 @@ jobs:
           ./Configure $CONF \
             no-asm \
             no-shared \
+            no-apps \
             no-tests \
             no-quic \
             -static \
