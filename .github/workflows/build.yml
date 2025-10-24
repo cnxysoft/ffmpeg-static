@@ -361,12 +361,8 @@ jobs:
           
           # 下载预编译的 OpenSSL
           echo "Downloading prebuilt OpenSSL..."
-          curl -L -o openssl-prebuilt.zip https://github.com/ShiftMediaProject/openssl/releases/download/3.4.1/openssl-3.4.1-msvc2022-x64-static.zip
-          unzip -q openssl-prebuilt.zip -d $PREFIX
-          
-          # 或者从其他来源获取
-          # curl -L -o openssl-prebuilt.tar.gz https://some-other-source/openssl-windows-x64.tar.gz
-          # tar -xf openssl-prebuilt.tar.gz -C $PREFIX
+          curl -L -o openssl-prebuilt.tar.gz https://some-other-source/openssl-windows-x64.tar.gz
+          tar -xf openssl-prebuilt.tar.gz -C $PREFIX
           
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
