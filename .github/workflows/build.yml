@@ -424,7 +424,7 @@ jobs:
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 \
                 --extra-cflags="-I$X264_PREFIX/include -I$OPENSSL_PREFIX/include" \
                 --extra-ldflags="-L$X264_PREFIX/lib -L$SSL_LIB_PATH -static" \
-                --extra-libs="-lx264 -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32"
+                --extra-libs="-lx264 -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32" --pkg-config=pkg-config
 
               ret=$?
               set -e
