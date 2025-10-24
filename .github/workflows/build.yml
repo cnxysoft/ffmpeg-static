@@ -511,7 +511,7 @@ jobs:
                 --enable-encoder=libx264 --enable-encoder=aac \
                 --enable-version3 --enable-openssl --enable-gpl \
                 --extra-cflags="-I$X264_PREFIX/include -I$OPENSSL_PREFIX/include" \
-                --extra-ldflags="-L$X264_PREFIX/lib -L$OPENSSL_PREFIX/lib -static" \
+                --extra-ldflags="-L$X264_PREFIX/lib -L$OPENSSL_PREFIX/lib64 -static" \
                 --extra-libs="-lx264 -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32 -lucrt -lkernel32"
               ret=$?
               set -e
