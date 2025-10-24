@@ -281,7 +281,7 @@ jobs:
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
       # 新增的 OpenSSL 构建步骤，专门针对 Windows ARM/ARM64
-      - name: Build OpenSSL for Windows ARM/ARM64 (new approach)
+      - name: Build OpenSSL for Windows ARM/ARM64 (safe QUIC disable)
         if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
         shell: bash
         run: |
@@ -295,45 +295,24 @@ jobs:
             CONF=mingw64
           fi
 
-          # 使用更新的 OpenSSL 3.4+ 版本
           curl -LO https://www.openssl.org/source/openssl-3.4.1.tar.gz
           tar -xf openssl-3.4.1.tar.gz
           cd openssl-3.4.1
 
-          echo "=== 解压后的顶层目录结构 ==="
-          ls -la
-
-          echo "=== 检查关键目录 ==="
-          [ -d "include" ] && echo "✅ include 目录存在" && ls -la include/
-          [ -d "crypto" ] && echo "✅ crypto 目录存在"
-          [ -d "ssl" ] && echo "✅ ssl 目录存在"
-
-          echo "=== 查找 ssl.h 文件 ==="
-          find . -name "ssl.h" -type f 2>/dev/null | head -5 || echo "未找到 ssl.h"
-
-          # 1. 修改 Configure 脚本
+          # 1. 修改 Configure 脚本彻底禁用 QUIC
           sed -i 's/\$disabled{"quic"} = "default";/\$disabled{"quic"} = "yes";/' Configure
 
-          # 2. 关键：修改模板文件，在配置前移除 quic.h 引用
+          # 2. 修改模板文件，但不删除源文件
           if [ -f "include/openssl/ssl.h.in" ]; then
             echo "Found ssl.h.in, removing quic.h include..."
             sed -i 's/# include <openssl\/quic.h>//g' include/openssl/ssl.h.in
-          else
-            echo "ssl.h.in not found, searching for template files..."
-            # 查找其他可能的模板文件
-            find . -name "*.h.in" -type f | while read file; do
-              if grep -q "quic.h" "$file"; then
-                echo "Found quic.h reference in: $file"
-                sed -i 's/# include <openssl\/quic.h>//g' "$file"
-              fi
-            done
           fi
 
-          # 3. 删除现有的 QUIC 相关源文件
-          find . -name "*quic*" -type f -delete
-          find . -name "*qlog*" -type f -delete
+          # 3. 创建一个空的 quic_vlint.c 文件来满足构建系统
+          mkdir -p crypto
+          touch crypto/quic_vlint.c
 
-          # 4. 配置
+          # 4. 配置时彻底禁用 QUIC
           ./Configure $CONF \
             no-asm \
             no-shared \
@@ -346,12 +325,12 @@ jobs:
             -D_WINDLL \
             -DNO_WINCRYPT
 
-          # 5. 配置后再次检查生成的头文件
-          if [ -f "include/openssl/ssl.h" ]; then
+          # 5. 检查并修复生成的头文件
+          if [ -f "include/internal/ssl.h" ]; then
             echo "Checking generated ssl.h for quic.h references..."
-            if grep -q "quic.h" "include/openssl/ssl.h"; then
-              echo "quic.h reference still found in generated ssl.h, removing..."
-              sed -i 's/# include <openssl\/quic.h>//g' include/openssl/ssl.h
+            if grep -q "quic.h" "include/internal/ssl.h"; then
+              echo "quic.h reference found in include/internal/ssl.h, removing..."
+              sed -i 's/# include <openssl\/quic.h>//g' include/internal/ssl.h
             fi
           fi
 
