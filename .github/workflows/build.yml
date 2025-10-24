@@ -394,7 +394,7 @@ jobs:
               set +e
 
               ./configure --arch=$ARCH --target-os=win32 --cross-prefix=$CROSS_PREFIX --prefix=$PWD/build \
-                --enable-cross-compile --enable-static --disable-shared \
+                --enable-cross-compile --enable-static --disable-shared --disable-mediafoundation \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-avdevice --disable-avfilter \
                 --enable-protocol=http --enable-protocol=https \
