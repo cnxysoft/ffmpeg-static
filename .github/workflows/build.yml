@@ -379,6 +379,8 @@ jobs:
                 SSL_LIB_PATH="$OPENSSL_PREFIX/lib"
               fi
 
+              set +e
+
               ./configure --arch=$ARCH --target-os=win32 --cross-prefix=$CROSS_PREFIX --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
@@ -392,6 +394,14 @@ jobs:
                 --extra-cflags="-I$X264_PREFIX/include -I$OPENSSL_PREFIX/include" \
                 --extra-ldflags="-L$X264_PREFIX/lib -L$SSL_LIB_PATH -static" \
                 --extra-libs="-lx264 -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32"
+
+              ret=$?
+              set -e
+              if [ $ret -ne 0 ]; then
+                echo "=== CONFIG.LOG (last 100 lines) ==="
+                tail -n 100 ffbuild/config.log
+                exit $ret
+              fi
               ;;
 
             *)
