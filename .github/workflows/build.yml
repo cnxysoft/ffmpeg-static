@@ -311,10 +311,29 @@ jobs:
           echo "=== 查找 ssl.h 文件 ==="
           find . -name "ssl.h" -type f 2>/dev/null | head -5 || echo "未找到 ssl.h"
 
-          # 使用 sed 直接修改 Configure 文件，避免 patch 问题
+          # 1. 修改 Configure 脚本
           sed -i 's/\$disabled{"quic"} = "default";/\$disabled{"quic"} = "yes";/' Configure
 
-          # 使用特定的配置来避免头文件冲突
+          # 2. 关键：修改模板文件，在配置前移除 quic.h 引用
+          if [ -f "include/openssl/ssl.h.in" ]; then
+            echo "Found ssl.h.in, removing quic.h include..."
+            sed -i 's/# include <openssl\/quic.h>//g' include/openssl/ssl.h.in
+          else
+            echo "ssl.h.in not found, searching for template files..."
+            # 查找其他可能的模板文件
+            find . -name "*.h.in" -type f | while read file; do
+              if grep -q "quic.h" "$file"; then
+                echo "Found quic.h reference in: $file"
+                sed -i 's/# include <openssl\/quic.h>//g' "$file"
+              fi
+            done
+          fi
+
+          # 3. 删除现有的 QUIC 相关源文件
+          find . -name "*quic*" -type f -delete
+          find . -name "*qlog*" -type f -delete
+
+          # 4. 配置
           ./Configure $CONF \
             no-asm \
             no-shared \
@@ -327,10 +346,14 @@ jobs:
             -D_WINDLL \
             -DNO_WINCRYPT
 
-          # 手动移除所有 QUIC 相关文件，防止它们被编译
-          find . -name "*quic*" -type f -delete
-          find . -name "*qlog*" -type f -delete
-          find . -name "*qlog*" -type d -exec rm -rf {} + 2>/dev/null || true
+          # 5. 配置后再次检查生成的头文件
+          if [ -f "include/openssl/ssl.h" ]; then
+            echo "Checking generated ssl.h for quic.h references..."
+            if grep -q "quic.h" "include/openssl/ssl.h"; then
+              echo "quic.h reference still found in generated ssl.h, removing..."
+              sed -i 's/# include <openssl\/quic.h>//g' include/openssl/ssl.h
+            fi
+          fi
 
           make -j"$(nproc)"
           make install_sw
