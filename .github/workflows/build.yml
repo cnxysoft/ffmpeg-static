@@ -129,7 +129,29 @@ jobs:
           # 验证安装
           echo "Verifying installation..."
           "$TOOLCHAIN/bin/clang" --version
-          "$TOOLCHAIN/bin/pkg-config" --version
+
+      - name: Install pkg-config for Windows
+        if: matrix.triplet == 'windows-amd64' && runner.os == 'Windows'
+        shell: bash
+        run: |
+          # 检查是否已安装 pkg-config
+          if ! command -v pkg-config &> /dev/null; then
+            echo "Installing pkg-config..."
+            # 在 Windows 环境中，我们可以使用 chocolatey 或手动安装
+            if command -v choco &> /dev/null; then
+              choco install pkgconfiglite -y
+            else
+              # 或者从 MSYS2 获取 pkg-config
+              curl -L -o pkg-config.zip https://github.com/pkgconf/pkgconf/releases/download/pkgconf-2.2.0/pkgconf-2.2.0.zip
+              unzip -q pkg-config.zip -d pkg-config
+              echo "$PWD/pkg-config/bin" >> $GITHUB_PATH
+            fi
+          else
+            echo "pkg-config already installed"
+          fi
+          
+          # 验证安装
+          pkg-config --version
 
       - name: Install LLVM-mingw (Windows cross targets on Ubuntu)
         if: (matrix.triplet == 'windows-386' || matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64') && runner.os == 'Linux'
