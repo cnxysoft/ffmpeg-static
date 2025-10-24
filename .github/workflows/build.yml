@@ -479,6 +479,7 @@ jobs:
                 fi
               ;;
             *)
+              export PKG_CONFIG_PATH=$HOME/x264-win64/lib/pkgconfig:$PKG_CONFIG_PATH
               ./configure --prefix=$PWD/build \
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
