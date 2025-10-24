@@ -112,10 +112,24 @@ jobs:
         if: matrix.triplet == 'windows-amd64' && runner.os == 'Windows'
         shell: bash
         run: |
-          curl -L -o llvm-mingw.zip https://github.com/mstorsjo/llvm-mingw/releases/download/20240820/llvm-mingw-20240820-ucrt-x86_64.zip
-          unzip -q llvm-mingw.zip -d llvm-mingw
-          TOOLCHAIN=$PWD/llvm-mingw/llvm-mingw-20240820-ucrt-x86_64
+          # 检查是否已存在
+          if [ -d "llvm-mingw/llvm-mingw-20240820-ucrt-x86_64/bin" ]; then
+            echo "LLVM-mingw already installed, skipping download"
+            TOOLCHAIN=$PWD/llvm-mingw/llvm-mingw-20240820-ucrt-x86_64
+          else
+            echo "Downloading and installing LLVM-mingw..."
+            curl -L -o llvm-mingw.zip https://github.com/mstorsjo/llvm-mingw/releases/download/20240820/llvm-mingw-20240820-ucrt-x86_64.zip
+            unzip -q llvm-mingw.zip -d llvm-mingw
+            TOOLCHAIN=$PWD/llvm-mingw/llvm-mingw-20240820-ucrt-x86_64
+          fi
+          
+          echo "TOOLCHAIN=$TOOLCHAIN" >> $GITHUB_ENV
           echo "$TOOLCHAIN/bin" >> $GITHUB_PATH
+          
+          # 验证安装
+          echo "Verifying installation..."
+          "$TOOLCHAIN/bin/clang" --version
+          "$TOOLCHAIN/bin/pkg-config" --version
 
       - name: Install LLVM-mingw (Windows cross targets on Ubuntu)
         if: (matrix.triplet == 'windows-386' || matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64') && runner.os == 'Linux'
@@ -480,6 +494,11 @@ jobs:
               ;;
             *)
               export PKG_CONFIG_PATH=$HOME/x264-win64/lib/pkgconfig:$PKG_CONFIG_PATH
+
+              # 使用 LLVM-mingw 的 pkg-config
+              TOOLCHAIN=$PWD/llvm-mingw/llvm-mingw-20240820-ucrt-x86_64
+              export PATH=$TOOLCHAIN/bin:$PATH
+
 
               # 检查哪个 pkg-config 在使用
               echo "Which pkg-config:"
