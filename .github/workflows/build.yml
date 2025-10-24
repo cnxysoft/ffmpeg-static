@@ -340,71 +340,6 @@ jobs:
 
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
-      - name: Check OpenSSL libraries
-        if: matrix.triplet == 'windows-arm64'
-        shell: bash
-        run: |
-          echo "Checking OpenSSL installation in $HOME/openssl-winarm64"
-          find $HOME/openssl-winarm64 -name "*.a" -o -name "*.lib" | head -20
-          ls -la $HOME/openssl-winarm64/lib/
-          echo "OpenSSL pkg-config files:"
-          ls -la $HOME/openssl-winarm64/lib/pkgconfig/ || echo "No pkgconfig directory"
-          
-          # 检查系统 OpenSSL
-          echo "System OpenSSL:"
-          pkg-config --modversion openssl
-          pkg-config --libs openssl
-
-      - name: Configure FFmpeg with fixed OpenSSL paths
-        if: matrix.triplet == 'windows-arm64'
-        shell: bash
-        run: |
-          # 清除系统 OpenSSL 的影响
-          unset PKG_CONFIG_PATH
-          export PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig:$HOME/openssl-winarm64/lib/pkgconfig
-          
-          echo "Using PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
-          echo "x264 version:"
-          pkg-config --modversion x264
-          echo "OpenSSL version (from our build):"
-          pkg-config --modversion openssl
-          echo "OpenSSL libs:"
-          pkg-config --libs openssl
-          
-          # 如果 pkg-config 仍然找不到正确的 OpenSSL，手动指定路径
-          if ! pkg-config --exists openssl; then
-            echo "pkg-config cannot find OpenSSL, using manual paths"
-            MANUAL_SSL_CFLAGS="-I$HOME/openssl-winarm64/include"
-            MANUAL_SSL_LIBS="-L$HOME/openssl-winarm64/lib -lssl -lcrypto"
-          else
-            MANUAL_SSL_CFLAGS=""
-            MANUAL_SSL_LIBS=""
-          fi
-          
-          set +e
-          ./configure --arch=arm64 --target-os=win32 --cross-prefix=aarch64-w64-mingw32- --prefix=$PWD/build \
-            --enable-cross-compile --enable-static --disable-shared \
-            --disable-programs --disable-doc --disable-debug \
-            --disable-avdevice --disable-avfilter \
-            --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
-            --enable-protocol=http --enable-protocol=https \
-            --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
-            --enable-muxer=mp4 --enable-muxer=gif \
-            --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
-            --enable-encoder=libx264 --enable-encoder=aac \
-            --enable-version3 --enable-openssl --enable-gpl --enable-libx264 \
-            --pkg-config="pkg-config --static" \
-            --extra-cflags="-I$HOME/openssl-winarm64/include $MANUAL_SSL_CFLAGS" \
-            --extra-ldflags="-L$HOME/openssl-winarm64/lib $MANUAL_SSL_LIBS"
-          ret=$?
-          set -e
-          
-          if [ $ret -ne 0 ]; then
-            echo "=== CONFIG.LOG (last 100 lines) ==="
-            tail -n 100 ffbuild/config.log
-            exit $ret
-          fi
-
       - name: Configure FFmpeg
         shell: bash
         run: |
@@ -516,7 +451,7 @@ jobs:
               fi
               ;;
             windows-arm64)
-              export PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
+              export PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig:$OPENSSL_PREFIX/lib64/pkgconfig:$PKG_CONFIG_PATH
               # 验证 pkg-config 能找到所有库
               echo "x264 version:"
               pkg-config --modversion x264
@@ -534,7 +469,7 @@ jobs:
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
                 --enable-version3 --enable-openssl  --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
-                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib -lssl -lcrypto"
+                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib64 -lssl -lcrypto"
                 ret=$?
                 set -e
                 if [ $ret -ne 0 ]; then
