@@ -353,18 +353,19 @@ jobs:
 
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
-      - name: Build OpenSSL for Windows amd64
+      - name: Build OpenSSL for Windows amd64 (fix Perl issues)
         if: matrix.triplet == 'windows-amd64'
         shell: bash
         run: |
+          # 安装必要的 Perl 模块
+          echo "Installing required Perl modules..."
+          cpan install Locale::Maketext::Simple Params::Check IPC::Cmd
+          
           TARGET=x86_64-w64-mingw32
           PREFIX=$HOME/openssl-win64
           CONF=mingw64
 
           echo "Building OpenSSL for Windows amd64..."
-          echo "Target: $TARGET"
-          echo "Prefix: $PREFIX"
-
           curl -LO https://www.openssl.org/source/openssl-3.4.1.tar.gz
           tar -xf openssl-3.4.1.tar.gz
           cd openssl-3.4.1
@@ -395,10 +396,6 @@ jobs:
           make -j"$(nproc)"
           make install_sw
 
-          echo "OpenSSL build completed"
-          echo "Checking installation:"
-          find $PREFIX -name "*.a" | head -10
-          
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
       - name: Configure FFmpeg
