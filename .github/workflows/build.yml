@@ -302,6 +302,8 @@ jobs:
 
           # 使用 sed 直接修改 Configure 文件，避免 patch 问题
           sed -i 's/\$disabled{"quic"} = "default";/\$disabled{"quic"} = "yes";/' Configure
+          # 注释掉 ssl.h.in 中对 quic.h 的包含
+          sed -i 's|# include <openssl/quic.h>|// # include <openssl/quic.h>|g' openssl-3.4.1/include/openssl/ssl.h.in
 
           # 使用特定的配置来避免头文件冲突
           ./Configure $CONF \
@@ -309,12 +311,10 @@ jobs:
             no-shared \
             no-tests \
             no-quic \
-            no-ssl-trace \
             -static \
             --prefix=$PREFIX \
             --cross-compile-prefix=$TARGET- \
             -DOPENSSL_NO_QUIC \
-            -DOPENSSL_NO_SSL_TRACE \
             -D_WINDLL \
             -DNO_WINCRYPT
 
@@ -322,27 +322,6 @@ jobs:
           find . -name "*quic*" -type f -delete
           find . -name "*qlog*" -type f -delete
           find . -name "*qlog*" -type d -exec rm -rf {} + 2>/dev/null || true
-
-          # 在配置之后，构建之前修改 ssl.h
-          # 首先检查文件是否存在
-          if [ -f "include/openssl/ssl.h" ]; then
-            sed -i 's/# include <openssl\/quic.h>//g' include/openssl/ssl.h
-          else
-            echo "Warning: include/openssl/ssl.h not found, trying alternative path..."
-            # 尝试其他可能的路径
-            if [ -f "ssl.h" ]; then
-              sed -i 's/# include <openssl\/quic.h>//g' ssl.h
-            else
-              # 查找 ssl.h 文件
-              SSL_H_PATH=$(find . -name ssl.h -type f | head -1)
-              if [ -n "$SSL_H_PATH" ]; then
-                echo "Found ssl.h at: $SSL_H_PATH"
-                sed -i 's/# include <openssl\/quic.h>//g' "$SSL_H_PATH"
-              else
-                echo "Error: ssl.h not found anywhere!"
-              fi
-            fi
-          fi
 
           make -j"$(nproc)"
           make install_sw
