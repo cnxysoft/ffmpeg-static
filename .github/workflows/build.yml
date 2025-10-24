@@ -300,10 +300,16 @@ jobs:
           tar -xf openssl-3.4.1.tar.gz
           cd openssl-3.4.1
 
-          echo "=== 解压后的文件结构 ==="
-          find . -type f -name "*.h" | head -20
-          echo "..."
-          find . -type f -name "ssl.h" | head -10
+          echo "=== 解压后的顶层目录结构 ==="
+          ls -la
+
+          echo "=== 检查关键目录 ==="
+          [ -d "include" ] && echo "✅ include 目录存在" && ls -la include/
+          [ -d "crypto" ] && echo "✅ crypto 目录存在"
+          [ -d "ssl" ] && echo "✅ ssl 目录存在"
+
+          echo "=== 查找 ssl.h 文件 ==="
+          find . -name "ssl.h" -type f 2>/dev/null | head -5 || echo "未找到 ssl.h"
 
           # 使用 sed 直接修改 Configure 文件，避免 patch 问题
           sed -i 's/\$disabled{"quic"} = "default";/\$disabled{"quic"} = "yes";/' Configure
@@ -321,27 +327,13 @@ jobs:
             -D_WINDLL \
             -DNO_WINCRYPT
 
-          echo "=== 配置后的文件结构 ==="
-          find . -type f -name "ssl.h" | head -10
-
           # 手动移除所有 QUIC 相关文件，防止它们被编译
           find . -name "*quic*" -type f -delete
           find . -name "*qlog*" -type f -delete
           find . -name "*qlog*" -type d -exec rm -rf {} + 2>/dev/null || true
 
           make -j"$(nproc)"
-
-          echo "=== 编译后的文件结构 ==="
-          find . -type f -name "ssl.h" | head -10
-
           make install_sw
-
-          echo "=== 安装后的目录结构 ==="
-          echo "PREFIX: $PREFIX"
-          ls -la $PREFIX/ || echo "PREFIX 目录不存在"
-          ls -la $PREFIX/include/ || echo "include 目录不存在"
-          ls -la $PREFIX/include/openssl/ || echo "openssl 目录不存在"
-          find $PREFIX -name "ssl.h" 2>/dev/null || echo "未找到 ssl.h"
 
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
