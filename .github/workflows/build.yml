@@ -242,8 +242,9 @@ jobs:
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig" >> $GITHUB_ENV
 
-      - name: Build OpenSSL 3 (cross targets)
-        if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64' || matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64' || matrix.triplet == 'windows-386'
+      # 原有的 OpenSSL 构建步骤，只针对 Linux ARM/ARM64 和 Windows 386
+      - name: Build OpenSSL 3 (linux arm/arm64 and windows 386 cross targets)
+        if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64' || matrix.triplet == 'windows-386'
         shell: bash
         run: |
           case "${{ matrix.triplet }}" in
@@ -259,17 +260,6 @@ jobs:
               PREFIX=$HOME/openssl-arm64
               EXTRA="no-tests"
               ;;
-            windows-arm)
-              PREFIX=$HOME/openssl-winarm
-              # 对于 Windows ARM，使用更简化的配置
-              EXTRA="no-asm no-shared no-tests no-stdio no-ui-console no-tests -static"
-              TARGET="armv7-w64-mingw32"
-              ;;
-            windows-arm64)
-              PREFIX=$HOME/openssl-winarm64
-              EXTRA="no-asm no-shared no-tests no-stdio no-ui-console no-tests -static"
-              TARGET="aarch64-w64-mingw32"
-              ;;
             windows-386)
               CROSS=i686-w64-mingw32
               CONF=mingw
@@ -281,29 +271,48 @@ jobs:
           curl -LO https://www.openssl.org/source/openssl-3.3.2.tar.gz
           tar -xf openssl-3.3.2.tar.gz
           cd openssl-3.3.2
+          ./Configure $CONF $EXTRA \
+            --cross-compile-prefix=$CROSS- \
+            --prefix=$PREFIX --openssldir=$PREFIX/ssl
 
-          # 对于 Windows ARM 目标，使用不同的方法
-          if [[ "${{ matrix.triplet }}" == "windows-arm" || "${{ matrix.triplet }}" == "windows-arm64" ]]; then
-            # 方法1：使用通用的配置，然后手动调整
-            ./config $EXTRA --prefix=$PREFIX --openssldir=$PREFIX/ssl
-            
-            # 修改 Makefile 以使用正确的工具链
-            sed -i "s/^CC=.*/CC=clang -target $TARGET/" Makefile
-            sed -i "s/^AR=.*/AR=llvm-ar/" Makefile
-            sed -i "s/^RANLIB=.*/RANLIB=llvm-ranlib/" Makefile
-            sed -i "s/^RC=.*/RC=echo/" Makefile
-            sed -i "s/^WINDRES=.*/WINDRES=echo/" Makefile
-            sed -i "s/^NM=.*/NM=llvm-nm/" Makefile
-            
-            # 添加必要的标志
-            echo "CFLAGS += -target $TARGET" >> Makefile
-            echo "CXXFLAGS += -target $TARGET" >> Makefile
-            echo "LDFLAGS += -target $TARGET" >> Makefile
+          make -j"$(nproc)"
+          make install_sw
+
+          echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
+
+      # 新增的 OpenSSL 构建步骤，专门针对 Windows ARM/ARM64
+      - name: Build OpenSSL for Windows ARM/ARM64 (new approach)
+        if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
+        shell: bash
+        run: |
+          if [[ "${{ matrix.triplet }}" == "windows-arm" ]]; then
+            TARGET=armv7-w64-mingw32
+            PREFIX=$HOME/openssl-winarm
+            # Windows ARM 是 32 位，使用 mingw 配置
+            CONF=mingw
           else
-            ./Configure $CONF $EXTRA \
-              --cross-compile-prefix=$CROSS- \
-              --prefix=$PREFIX --openssldir=$PREFIX/ssl
+            TARGET=aarch64-w64-mingw32
+            PREFIX=$HOME/openssl-winarm64
+            # Windows ARM64 是 64 位，使用 mingw64 配置
+            CONF=mingw64
           fi
+
+          # 使用更新的 OpenSSL 3.4+ 版本
+          curl -LO https://www.openssl.org/source/openssl-3.4.1.tar.gz
+          tar -xf openssl-3.4.1.tar.gz
+          cd openssl-3.4.1
+
+          # 使用特定的配置来避免头文件冲突
+          ./Configure $CONF \
+            no-asm \
+            no-shared \
+            no-tests \
+            -static \
+            --prefix=$PREFIX \
+            --cross-compile-prefix=$TARGET- \
+            -DOPENSSL_NO_QUIC \
+            -D_WINDLL \
+            -DNO_WINCRYPT
 
           make -j"$(nproc)"
           make install_sw
