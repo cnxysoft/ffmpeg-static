@@ -211,7 +211,33 @@ jobs:
             --prefix=$HOME/x264-winarm64
           make -j"$(nproc)"
           make install
+
+          # 验证安装
+          echo "验证 x264 安装:"
+          ls -la $HOME/x264-winarm64/lib/pkgconfig/
+          cat $HOME/x264-winarm64/lib/pkgconfig/x264.pc
+
           echo "PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig" >> $GITHUB_ENV
+
+      - name: Test pkg-config before configuring FFmpeg
+        if: matrix.triplet == 'windows-arm64'
+        shell: bash
+        run: |
+          export PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig:$PKG_CONFIG_PATH
+          
+          echo "测试 pkg-config:"
+          pkg-config --exists x264
+          if [ $? -eq 0 ]; then
+            echo "✅ pkg-config 成功找到 x264"
+            pkg-config --modversion x264
+            pkg-config --cflags x264
+            pkg-config --libs x264
+          else
+            echo "❌ pkg-config 无法找到 x264"
+            echo "可用的 .pc 文件:"
+            find $HOME -name "*.pc" | grep x264 || echo "未找到 x264.pc 文件"
+            exit 1
+          fi
 
       # OpenSSL 构建步骤
       - name: Build OpenSSL for Linux ARM/ARM64
