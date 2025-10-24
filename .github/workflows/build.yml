@@ -32,8 +32,8 @@ jobs:
             triplet: linux-arm64
             arch: aarch64
 
-          # Windows
-          - os: windows-latest
+          # Windows (全部在 Ubuntu 上交叉编译)
+          - os: ubuntu-22.04
             triplet: windows-amd64
             arch: x86_64
           - os: ubuntu-22.04
@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: FFmpeg/FFmpeg
-          ref: n7.1   # 或 master
+          ref: n7.1
 
       # Linux 依赖
       - name: Install deps (Linux x86/x86_64)
@@ -85,53 +85,19 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install yasm nasm x264 openssl
 
-      # Windows 依赖
-      - name: Install deps (Windows)
-        if: runner.os == 'Windows'
-        run: choco install make nasm yasm
-
-      - name: Install deps (Windows 386 cross)
-        if: matrix.triplet == 'windows-386'
+      # Windows 交叉编译依赖 (在 Ubuntu 上)
+      - name: Install Windows cross-compilation deps
+        if: startsWith(matrix.triplet, 'windows-') && runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64-i686 g++-mingw-w64-i686 \
-                                  binutils-mingw-w64-i686 mingw-w64-i686-dev \
-                                  yasm nasm pkg-config libx264-dev \
-                                  binutils-mingw-w64-i686 mingw-w64-i686-dev
-
-      - name: Install deps (Windows arm/arm64 cross)
-        if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64-i686 g++-mingw-w64-i686 \
-                                  binutils-mingw-w64-i686 mingw-w64-i686-dev \
-                                  yasm nasm pkg-config libx264-dev \
-                                  binutils-mingw-w64-i686 mingw-w64-i686-dev
-
-      - name: Install LLVM-mingw (Windows amd64 native)
-        if: matrix.triplet == 'windows-amd64' && runner.os == 'Windows'
-        shell: bash
-        run: |
-          # 检查是否已存在
-          if [ -d "llvm-mingw/llvm-mingw-20240820-ucrt-x86_64/bin" ]; then
-            echo "LLVM-mingw already installed, skipping download"
-            TOOLCHAIN=$PWD/llvm-mingw/llvm-mingw-20240820-ucrt-x86_64
-          else
-            echo "Downloading and installing LLVM-mingw..."
-            curl -L -o llvm-mingw.zip https://github.com/mstorsjo/llvm-mingw/releases/download/20240820/llvm-mingw-20240820-ucrt-x86_64.zip
-            unzip -q llvm-mingw.zip -d llvm-mingw
-            TOOLCHAIN=$PWD/llvm-mingw/llvm-mingw-20240820-ucrt-x86_64
-          fi
-          
-          echo "TOOLCHAIN=$TOOLCHAIN" >> $GITHUB_ENV
-          echo "$TOOLCHAIN/bin" >> $GITHUB_PATH
-          
-          # 验证安装
-          echo "Verifying installation..."
-          "$TOOLCHAIN/bin/clang" --version
+          sudo apt-get install -y \
+            gcc-mingw-w64 g++-mingw-w64 \
+            binutils-mingw-w64 mingw-w64 \
+            yasm nasm pkg-config build-essential \
+            libx264-dev
 
       - name: Install LLVM-mingw (Windows cross targets on Ubuntu)
-        if: (matrix.triplet == 'windows-386' || matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64') && runner.os == 'Linux'
+        if: startsWith(matrix.triplet, 'windows-') && runner.os == 'Linux'
         shell: bash
         run: |
           curl -L -o llvm-mingw.tar.xz https://github.com/mstorsjo/llvm-mingw/releases/download/20240820/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64.tar.xz
@@ -139,22 +105,13 @@ jobs:
           TOOLCHAIN=$PWD/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64
           echo "$TOOLCHAIN/bin" >> $GITHUB_PATH
 
+          # 创建必要的符号链接
           for triplet in x86_64-w64-mingw32 i686-w64-mingw32 aarch64-w64-mingw32 armv7-w64-mingw32; do
             ln -sf $TOOLCHAIN/bin/llvm-strings $TOOLCHAIN/bin/${triplet}-strings
+            ln -sf $TOOLCHAIN/bin/llvm-windres $TOOLCHAIN/bin/${triplet}-windres
           done
 
-      - name: Create LLVM-mingw symlinks for Windows ARM
-        if: (matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64') && runner.os == 'Linux'
-        shell: bash
-        run: |
-          TOOLCHAIN=$PWD/llvm-mingw-20240820-ucrt-ubuntu-20.04-x86_64
-          # 为 Windows ARM 目标创建必要的符号链接
-          ln -sf $TOOLCHAIN/bin/llvm-windres $TOOLCHAIN/bin/armv7-w64-mingw32-windres
-          ln -sf $TOOLCHAIN/bin/llvm-windres $TOOLCHAIN/bin/aarch64-w64-mingw32-windres
-          # 确保这些工具可用
-          ln -sf $TOOLCHAIN/bin/clang $TOOLCHAIN/bin/armv7-w64-mingw32-clang
-          ln -sf $TOOLCHAIN/bin/clang $TOOLCHAIN/bin/aarch64-w64-mingw32-clang
-
+      # x264 构建步骤 (保持不变)
       - name: Build and install x264 (Linux arm cross)
         if: matrix.triplet == 'linux-arm'
         run: |
@@ -207,7 +164,8 @@ jobs:
         run: |
           git clone --depth 1 https://code.videolan.org/videolan/x264.git
           cd x264
-          CC=clang \
+          # 使用 LLVM-mingw 工具链
+          CC=x86_64-w64-mingw32-clang \
           AR=llvm-ar \
           RANLIB=llvm-ranlib \
           STRIP=llvm-strip \
@@ -217,11 +175,11 @@ jobs:
             --enable-static \
             --disable-cli \
             --prefix=$HOME/x264-win64
+          # 修复 Windows 特定的编译问题
           sed -i 's/-mstack-alignment=64//g' config.mak
           echo "#define fseeko _fseeki64" >> config.h
           echo "#define ftello _ftelli64" >> config.h
           make -j"$(nproc)"
-          sed -i 's|/c/Users/|C:/Users/|g' config.mak
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-win64/lib/pkgconfig" >> $GITHUB_ENV
 
@@ -255,9 +213,9 @@ jobs:
           make install
           echo "PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig" >> $GITHUB_ENV
 
-      # 原有的 OpenSSL 构建步骤，只针对 Linux ARM/ARM64 和 Windows 386
-      - name: Build OpenSSL 3 (linux arm/arm64 and windows 386 cross targets)
-        if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64' || matrix.triplet == 'windows-386'
+      # OpenSSL 构建步骤
+      - name: Build OpenSSL for Linux ARM/ARM64
+        if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64'
         shell: bash
         run: |
           case "${{ matrix.triplet }}" in
@@ -265,26 +223,18 @@ jobs:
               CROSS=arm-linux-gnueabihf
               CONF=linux-armv4
               PREFIX=$HOME/openssl-arm
-              EXTRA="no-tests"
               ;;
             linux-arm64)
               CROSS=aarch64-linux-gnu
               CONF=linux-aarch64
               PREFIX=$HOME/openssl-arm64
-              EXTRA="no-tests"
-              ;;
-            windows-386)
-              CROSS=i686-w64-mingw32
-              CONF=mingw
-              PREFIX=$HOME/openssl-win32
-              EXTRA="no-tests"
               ;;
           esac
 
           curl -LO https://www.openssl.org/source/openssl-3.3.2.tar.gz
           tar -xf openssl-3.3.2.tar.gz
           cd openssl-3.3.2
-          ./Configure $CONF $EXTRA \
+          ./Configure $CONF no-tests \
             --cross-compile-prefix=$CROSS- \
             --prefix=$PREFIX --openssldir=$PREFIX/ssl
 
@@ -293,39 +243,44 @@ jobs:
 
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
-      # 新增的 OpenSSL 构建步骤，专门针对 Windows ARM/ARM64
-      - name: Build OpenSSL for Windows ARM/ARM64 (safe QUIC disable)
-        if: matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64'
+      - name: Build OpenSSL for Windows targets
+        if: startsWith(matrix.triplet, 'windows-')
         shell: bash
         run: |
-          if [[ "${{ matrix.triplet }}" == "windows-arm" ]]; then
-            TARGET=armv7-w64-mingw32
-            PREFIX=$HOME/openssl-winarm
-            CONF=mingw
-          else
-            TARGET=aarch64-w64-mingw32
-            PREFIX=$HOME/openssl-winarm64
-            CONF=mingw64
-          fi
+          case "${{ matrix.triplet }}" in
+            windows-386)
+              TARGET=i686-w64-mingw32
+              PREFIX=$HOME/openssl-win32
+              CONF=mingw
+              ;;
+            windows-amd64)
+              TARGET=x86_64-w64-mingw32
+              PREFIX=$HOME/openssl-win64
+              CONF=mingw64
+              ;;
+            windows-arm)
+              TARGET=armv7-w64-mingw32
+              PREFIX=$HOME/openssl-winarm
+              CONF=mingw
+              ;;
+            windows-arm64)
+              TARGET=aarch64-w64-mingw32
+              PREFIX=$HOME/openssl-winarm64
+              CONF=mingw64
+              ;;
+          esac
 
           curl -LO https://www.openssl.org/source/openssl-3.4.1.tar.gz
           tar -xf openssl-3.4.1.tar.gz
           cd openssl-3.4.1
 
-          # 1. 修改 Configure 脚本彻底禁用 QUIC
+          # 禁用 QUIC
           sed -i 's/\$disabled{"quic"} = "default";/\$disabled{"quic"} = "yes";/' Configure
-
-          # 2. 修改模板文件，但不删除源文件
           if [ -f "include/openssl/ssl.h.in" ]; then
-            echo "Found ssl.h.in, removing quic.h include..."
             sed -i 's/# include <openssl\/quic.h>//g' include/openssl/ssl.h.in
           fi
 
-          # 3. 创建一个空的 quic_vlint.c 文件来满足构建系统
-          mkdir -p crypto
-          touch crypto/quic_vlint.c
-
-          # 4. 配置时彻底禁用 QUIC
+          # 配置
           ./Configure $CONF \
             no-asm \
             no-shared \
@@ -339,31 +294,9 @@ jobs:
             -D_WINDLL \
             -DNO_WINCRYPT
 
-          # 5. 检查并修复生成的头文件
-          if [ -f "include/internal/ssl.h" ]; then
-            echo "Checking generated ssl.h for quic.h references..."
-            if grep -q "quic.h" "include/internal/ssl.h"; then
-              echo "quic.h reference found in include/internal/ssl.h, removing..."
-              sed -i 's/# include <openssl\/quic.h>//g' include/internal/ssl.h
-            fi
-          fi
-
           make -j"$(nproc)"
           make install_sw
 
-          echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
-
-      - name: Download prebuilt OpenSSL for Windows amd64
-        if: matrix.triplet == 'windows-amd64'
-        shell: bash
-        run: |
-          PREFIX=$HOME/openssl-win64
-          
-          # 下载预编译的 OpenSSL
-          echo "Downloading prebuilt OpenSSL..."
-          curl -L -o openssl-prebuilt.tar.gz https://some-other-source/openssl-windows-x64.tar.gz
-          tar -xf openssl-prebuilt.tar.gz -C $PREFIX
-          
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
       - name: Configure FFmpeg
@@ -372,13 +305,11 @@ jobs:
           case "${{ matrix.triplet }}" in
             linux-386)
               export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
-              pkg-config --modversion x264
               ./configure --arch=i686 --target-os=linux --prefix=$PWD/build \
                 --cc="gcc -m32" --cxx="g++ -m32" \
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-avdevice --disable-avfilter \
-                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
                 --enable-protocol=http --enable-protocol=https \
                 --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --enable-muxer=mp4 --enable-muxer=gif \
@@ -386,21 +317,23 @@ jobs:
                 --enable-encoder=libx264 --enable-encoder=aac \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
-            linux-arm)
-              export PKG_CONFIG_PATH=$HOME/x264-arm/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
-              pkg-config --modversion x264
-              pkg-config --cflags x264
-              pkg-config --libs x264
-              arm-linux-gnueabihf-objdump -f $HOME/x264-arm/lib/libx264.a | head
-              file $HOME/x264-arm/lib/libx264.a
-              file /usr/arm-linux-gnueabihf/lib/libpthread.a
-              set +e
-              ./configure --arch=arm --target-os=linux --cross-prefix=arm-linux-gnueabihf- --prefix=$PWD/build \
-                --cc=arm-linux-gnueabihf-gcc --cxx=arm-linux-gnueabihf-g++ \
+
+            linux-arm|linux-arm64)
+              if [[ "${{ matrix.triplet }}" == "linux-arm" ]]; then
+                X264_PREFIX=$HOME/x264-arm
+                CROSS_PREFIX=arm-linux-gnueabihf-
+                ARCH=arm
+              else
+                X264_PREFIX=$HOME/x264-arm64
+                CROSS_PREFIX=aarch64-linux-gnu-
+                ARCH=aarch64
+              fi
+              
+              export PKG_CONFIG_PATH=$X264_PREFIX/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig
+              ./configure --arch=$ARCH --target-os=linux --cross-prefix=$CROSS_PREFIX --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-avdevice --disable-avfilter \
-                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
                 --enable-protocol=http --enable-protocol=https \
                 --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --enable-muxer=mp4 --enable-muxer=gif \
@@ -408,183 +341,90 @@ jobs:
                 --enable-encoder=libx264 --enable-encoder=aac \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config=pkg-config \
                 --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
-              ret=$?
-              set -e
-              if [ $ret -ne 0 ]; then
-                echo "=== CONFIG.LOG (last 100 lines) ==="
-                tail -n 100 ffbuild/config.log
-                exit $ret
+              ;;
+
+            windows-*)
+              # Windows 目标通用配置
+              case "${{ matrix.triplet }}" in
+                windows-386)
+                  X264_PREFIX=$HOME/x264-i686
+                  OPENSSL_PREFIX=$HOME/openssl-win32
+                  CROSS_PREFIX=i686-w64-mingw32-
+                  ARCH=i686
+                  ;;
+                windows-amd64)
+                  X264_PREFIX=$HOME/x264-win64
+                  OPENSSL_PREFIX=$HOME/openssl-win64
+                  CROSS_PREFIX=x86_64-w64-mingw32-
+                  ARCH=x86_64
+                  ;;
+                windows-arm)
+                  X264_PREFIX=$HOME/x264-winarm
+                  OPENSSL_PREFIX=$HOME/openssl-winarm
+                  CROSS_PREFIX=armv7-w64-mingw32-
+                  ARCH=arm
+                  ;;
+                windows-arm64)
+                  X264_PREFIX=$HOME/x264-winarm64
+                  OPENSSL_PREFIX=$HOME/openssl-winarm64
+                  CROSS_PREFIX=aarch64-w64-mingw32-
+                  ARCH=arm64
+                  ;;
+              esac
+
+              # 确定 OpenSSL 库路径 (lib 或 lib64)
+              if [ -d "$OPENSSL_PREFIX/lib64" ]; then
+                SSL_LIB_PATH="$OPENSSL_PREFIX/lib64"
+              else
+                SSL_LIB_PATH="$OPENSSL_PREFIX/lib"
               fi
-              ;;
-            linux-arm64)
-              export PKG_CONFIG_PATH=$HOME/x264-arm64/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
-              pkg-config --modversion x264
-              ./configure --arch=aarch64 --target-os=linux --cross-prefix=aarch64-linux-gnu- --prefix=$PWD/build \
+
+              ./configure --arch=$ARCH --target-os=win32 --cross-prefix=$CROSS_PREFIX --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-avdevice --disable-avfilter \
-                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
                 --enable-protocol=http --enable-protocol=https \
                 --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
-                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
-              ;;
-            windows-386)
-              export PKG_CONFIG_PATH=$HOME/x264-i686/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
-              pkg-config --modversion x264
-              ./configure --arch=i686 --target-os=win32 --cross-prefix=i686-w64-mingw32- --prefix=$PWD/build \
-                --enable-cross-compile --enable-static --disable-shared \
-                --disable-programs --disable-doc --disable-debug \
-                --disable-avdevice --disable-avfilter \
-                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
-                --enable-protocol=http --enable-protocol=https \
-                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
-                --enable-muxer=mp4 --enable-muxer=gif \
-                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
-                --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
-                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
-              ;;
-            windows-arm)
-              export PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
-              # 验证 pkg-config 能找到所有库
-              echo "x264 version:"
-              pkg-config --modversion x264
-              echo "OpenSSL version:"
-              pkg-config --modversion openssl
-              set +e
-              ./configure --arch=arm --target-os=win32 --cross-prefix=armv7-w64-mingw32- --prefix=$PWD/build \
-                --enable-cross-compile --enable-static --disable-shared \
-                --disable-programs --disable-doc --disable-debug \
-                --disable-avdevice --disable-avfilter \
-                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
-                --enable-protocol=http --enable-protocol=https \
-                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
-                --enable-muxer=mp4 --enable-muxer=gif \
-                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
-                --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl  --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
-                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib -lssl -lcrypto"
-              ret=$?
-              set -e
-              if [ $ret -ne 0 ]; then
-                echo "=== CONFIG.LOG (last 100 lines) ==="
-                tail -n 100 ffbuild/config.log
-                exit $ret
-              fi
-              ;;
-            windows-arm64)
-              export PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig:$OPENSSL_PREFIX/lib64/pkgconfig:$PKG_CONFIG_PATH
-              # 验证 pkg-config 能找到所有库
-              echo "x264 version:"
-              pkg-config --modversion x264
-              echo "OpenSSL version:"
-              pkg-config --modversion openssl
-              set +e
-              ./configure --arch=arm64 --target-os=win32 --cross-prefix=aarch64-w64-mingw32- --prefix=$PWD/build \
-                --enable-cross-compile --enable-static --disable-shared \
-                --disable-programs --disable-doc --disable-debug \
-                --disable-avdevice --disable-avfilter \
-                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
-                --enable-protocol=http --enable-protocol=https \
-                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
-                --enable-muxer=mp4 --enable-muxer=gif \
-                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
-                --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl  --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
-                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib64 -lssl -lcrypto"
-                ret=$?
-                set -e
-                if [ $ret -ne 0 ]; then
-                  echo "=== CONFIG.LOG (last 100 lines) ==="
-                  tail -n 100 ffbuild/config.log
-                  exit $ret
-                fi
-              ;;
-            windows-amd64)
-              # 手动路径
-              X264_PREFIX=$HOME/x264-win64
-              OPENSSL_PREFIX=$HOME/openssl-win64
-              
-              # 使用更传统的 MinGW 链接方式
-              echo "Configuring FFmpeg with MinGW-style linking..."
-              set +e
-              ./configure --prefix=$PWD/build \
-                --enable-static --disable-shared \
-                --disable-programs --disable-doc --disable-debug \
-                --disable-avdevice --disable-avfilter \
-                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
-                --enable-protocol=http --enable-protocol=https \
-                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
-                --enable-muxer=mp4 --enable-muxer=gif \
-                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
-                --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl --enable-gpl \
+                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 \
                 --extra-cflags="-I$X264_PREFIX/include -I$OPENSSL_PREFIX/include" \
-                --extra-ldflags="-L$X264_PREFIX/lib -L$OPENSSL_PREFIX/lib64 -static" \
-                --extra-libs="-lx264 -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32 -lucrt -lkernel32"
-              ret=$?
-              set -e
-              
-              if [ $ret -ne 0 ]; then
-                echo "=== CONFIG.LOG (last 100 lines) ==="
-                tail -n 100 ffbuild/config.log
-                exit $ret
-              fi
+                --extra-ldflags="-L$X264_PREFIX/lib -L$SSL_LIB_PATH -static" \
+                --extra-libs="-lx264 -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32"
               ;;
+
             *)
-              set +e
+              # macOS 和其他原生构建
               ./configure --prefix=$PWD/build \
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-avdevice --disable-avfilter \
-                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
                 --enable-protocol=http --enable-protocol=https \
                 --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264
-                ret=$?
-                set -e
-                if [ $ret -ne 0 ]; then
-                  echo "=== CONFIG.LOG (last 100 lines) ==="
-                  tail -n 100 ffbuild/config.log
-                  exit $ret
-                fi
               ;;
           esac
 
       - name: Build
         run: |
-          # macOS: limit parallelism to avoid posix_spawn resource errors
           if [[ "${{ runner.os }}" == "macOS" ]]; then
             make -j4
-          # Native Windows x86_64 job (windows-amd64): use mingw32-make single-thread
-          elif [[ "${{ matrix.triplet }}" == "windows-amd64" ]]; then
-            mingw32-make -j1
-          # Other platforms: normal make with available cores
           else
             make -j"$(nproc)"
           fi
         shell: bash
 
       - name: Install
-        run: |
-          if [[ "${{ matrix.triplet }}" == "windows-amd64" ]]; then
-            mingw32-make install
-          else
-            make install
-          fi
+        run: make install
         shell: bash
 
       - name: Package
         run: |
           cd build
-          # Produce a clean, reproducible archive name per target
           zip -r ../ffmpeg-${{ matrix.triplet }}.zip *
         shell: bash
 
