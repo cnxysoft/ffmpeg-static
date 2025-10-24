@@ -491,7 +491,7 @@ jobs:
                   exit $ret
                 fi
               ;;
-            *)
+            windows-amd64)
               # 手动路径
               X264_PREFIX=$HOME/x264-win64
               OPENSSL_PREFIX=$HOME/openssl-win64
@@ -543,6 +543,27 @@ jobs:
                 --extra-cflags="-I$X264_PREFIX/include -I$OPENSSL_PREFIX/include" \
                 --extra-ldflags="-L$X264_PREFIX/lib -L$OPENSSL_PREFIX/lib" \
                 --extra-libs="-lx264 -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32"
+                ret=$?
+                set -e
+                if [ $ret -ne 0 ]; then
+                  echo "=== CONFIG.LOG (last 100 lines) ==="
+                  tail -n 100 ffbuild/config.log
+                  exit $ret
+                fi
+              ;;
+            *)
+              set +e
+              ./configure --prefix=$PWD/build \
+                --enable-static --disable-shared \
+                --disable-programs --disable-doc --disable-debug \
+                --disable-avdevice --disable-avfilter \
+                --disable-encoders --disable-decoders --disable-muxers --disable-demuxers \
+                --enable-protocol=http --enable-protocol=https \
+                --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
+                --enable-muxer=mp4 --enable-muxer=gif \
+                --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
+                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-version3 --enable-openssl --enable-gpl --enable-libx264
                 ret=$?
                 set -e
                 if [ $ret -ne 0 ]; then
