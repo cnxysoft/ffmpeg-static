@@ -196,6 +196,12 @@ jobs:
             --prefix=$HOME/x264-winarm
           make -j"$(nproc)"
           make install
+
+          # 验证安装
+          echo "验证 x264 安装:"
+          ls -la $HOME/x264-winarm/lib/pkgconfig/
+          cat $HOME/x264-winarm/lib/pkgconfig/x264.pc
+
           echo "PKG_CONFIG_PATH=$HOME/x264-winarm/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Build and install x264 (Windows arm64 cross)
@@ -220,10 +226,9 @@ jobs:
           echo "PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Test pkg-config before configuring FFmpeg
-        if: matrix.triplet == 'windows-arm64'
+        if: startsWith(matrix.triplet, 'windows-')
         shell: bash
         run: |
-          export PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig:$PKG_CONFIG_PATH
           
           echo "测试 pkg-config:"
           pkg-config --exists x264
