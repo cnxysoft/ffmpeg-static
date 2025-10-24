@@ -353,6 +353,25 @@ jobs:
 
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
+      - name: Verify OpenSSL installation (Windows amd64)
+        if: matrix.triplet == 'windows-amd64'
+        shell: bash
+        run: |
+          echo "Checking OpenSSL installation..."
+          OPENSSL_PREFIX=$HOME/openssl-win64
+          echo "OpenSSL prefix: $OPENSSL_PREFIX"
+          
+          # 检查目录结构
+          find $OPENSSL_PREFIX -type f -name "*.a" -o -name "*.lib" | head -20
+          echo "=== lib directory ==="
+          ls -la $OPENSSL_PREFIX/lib/ || echo "lib directory not found"
+          echo "=== lib64 directory ==="  
+          ls -la $OPENSSL_PREFIX/lib64/ || echo "lib64 directory not found"
+          
+          # 检查 pkgconfig 文件
+          echo "=== pkgconfig files ==="
+          find $OPENSSL_PREFIX -name "*.pc" | head -10
+
       - name: Configure FFmpeg
         shell: bash
         run: |
