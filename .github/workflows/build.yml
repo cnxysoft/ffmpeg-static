@@ -303,7 +303,6 @@ jobs:
           cd openssl-3.4.1
 
           # 使用 sed 直接修改 Configure 文件，避免 patch 问题
-          sed -i 's/# include <openssl\/quic.h>//g' include/openssl/ssl.h
           sed -i 's/\$disabled{"quic"} = "default";/\$disabled{"quic"} = "yes";/' Configure
 
           # 使用特定的配置来避免头文件冲突
@@ -325,6 +324,8 @@ jobs:
           find . -name "*quic*" -type f -delete
           find . -name "*qlog*" -type f -delete
           find . -name "*qlog*" -type d -exec rm -rf {} + 2>/dev/null || true
+
+          sed -i 's/# include <openssl\/quic.h>//g' include/openssl/ssl.h
 
           make -j"$(nproc)"
           make install_sw
