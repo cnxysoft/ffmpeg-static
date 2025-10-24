@@ -480,11 +480,18 @@ jobs:
               ;;
             *)
               export PKG_CONFIG_PATH=$HOME/x264-win64/lib/pkgconfig:$PKG_CONFIG_PATH
+
+              # 检查哪个 pkg-config 在使用
+              echo "Which pkg-config:"
+              which pkg-config
+              pkg-config --version
+              
               # 验证 pkg-config 能找到所有库
               echo "x264 version:"
               pkg-config --modversion x264
               echo "OpenSSL version:"
               pkg-config --modversion openssl
+
               set +e
               ./configure --prefix=$PWD/build \
                 --enable-static --disable-shared \
