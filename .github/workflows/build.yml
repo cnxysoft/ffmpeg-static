@@ -288,12 +288,10 @@ jobs:
           if [[ "${{ matrix.triplet }}" == "windows-arm" ]]; then
             TARGET=armv7-w64-mingw32
             PREFIX=$HOME/openssl-winarm
-            # Windows ARM 是 32 位，使用 mingw 配置
             CONF=mingw
           else
             TARGET=aarch64-w64-mingw32
             PREFIX=$HOME/openssl-winarm64
-            # Windows ARM64 是 64 位，使用 mingw64 配置
             CONF=mingw64
           fi
 
@@ -325,7 +323,26 @@ jobs:
           find . -name "*qlog*" -type f -delete
           find . -name "*qlog*" -type d -exec rm -rf {} + 2>/dev/null || true
 
-          sed -i 's/# include <openssl\/quic.h>//g' include/openssl/ssl.h
+          # 在配置之后，构建之前修改 ssl.h
+          # 首先检查文件是否存在
+          if [ -f "include/openssl/ssl.h" ]; then
+            sed -i 's/# include <openssl\/quic.h>//g' include/openssl/ssl.h
+          else
+            echo "Warning: include/openssl/ssl.h not found, trying alternative path..."
+            # 尝试其他可能的路径
+            if [ -f "ssl.h" ]; then
+              sed -i 's/# include <openssl\/quic.h>//g' ssl.h
+            else
+              # 查找 ssl.h 文件
+              SSL_H_PATH=$(find . -name ssl.h -type f | head -1)
+              if [ -n "$SSL_H_PATH" ]; then
+                echo "Found ssl.h at: $SSL_H_PATH"
+                sed -i 's/# include <openssl\/quic.h>//g' "$SSL_H_PATH"
+              else
+                echo "Error: ssl.h not found anywhere!"
+              fi
+            fi
+          fi
 
           make -j"$(nproc)"
           make install_sw
