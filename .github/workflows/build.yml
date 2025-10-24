@@ -340,6 +340,24 @@ jobs:
 
           echo "OPENSSL_PREFIX=$PREFIX" >> $GITHUB_ENV
 
+      - name: Check OpenSSL version
+        shell: bash
+        run: |
+          echo "OPENSSL_PREFIX: $OPENSSL_PREFIX"
+          if [[ -n "$OPENSSL_PREFIX" ]]; then
+            echo "Checking OpenSSL in custom prefix..."
+            if [[ -f "$OPENSSL_PREFIX/include/openssl/opensslv.h" ]]; then
+              grep "OPENSSL_VERSION_STR" "$OPENSSL_PREFIX/include/openssl/opensslv.h" | head -1
+            fi
+          fi
+          
+          # 检查系统 OpenSSL
+          echo "System OpenSSL version:"
+          pkg-config --modversion openssl 2>/dev/null || echo "System OpenSSL not found via pkg-config"
+          
+          # 检查 PKG_CONFIG_PATH
+          echo "PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
+
       - name: Configure FFmpeg
         shell: bash
         run: |
@@ -436,7 +454,7 @@ jobs:
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
                 --enable-version3 --enable-openssl  --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
-                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
+                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib -lssl -lcrypto"
               ;;
             windows-arm64)
               export PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
@@ -452,7 +470,7 @@ jobs:
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
                 --enable-version3 --enable-openssl  --enable-gpl --enable-libx264 --pkg-config="pkg-config --static" \
-                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
+                --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib -lssl -lcrypto"
               ;;
             *)
               ./configure --prefix=$PWD/build \
