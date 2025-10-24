@@ -130,29 +130,6 @@ jobs:
           echo "Verifying installation..."
           "$TOOLCHAIN/bin/clang" --version
 
-      - name: Install pkg-config for Windows
-        if: matrix.triplet == 'windows-amd64' && runner.os == 'Windows'
-        shell: bash
-        run: |
-          # 检查是否已安装 pkg-config
-          if ! command -v pkg-config &> /dev/null; then
-            echo "Installing pkg-config..."
-            # 在 Windows 环境中，我们可以使用 chocolatey 或手动安装
-            if command -v choco &> /dev/null; then
-              choco install pkgconfiglite -y
-            else
-              # 或者从 MSYS2 获取 pkg-config
-              curl -L -o pkg-config.zip https://github.com/pkgconf/pkgconf/releases/download/pkgconf-2.2.0/pkgconf-2.2.0.zip
-              unzip -q pkg-config.zip -d pkg-config
-              echo "$PWD/pkg-config/bin" >> $GITHUB_PATH
-            fi
-          else
-            echo "pkg-config already installed"
-          fi
-          
-          # 验证安装
-          pkg-config --version
-
       - name: Install LLVM-mingw (Windows cross targets on Ubuntu)
         if: (matrix.triplet == 'windows-386' || matrix.triplet == 'windows-arm' || matrix.triplet == 'windows-arm64') && runner.os == 'Linux'
         shell: bash
@@ -515,23 +492,41 @@ jobs:
                 fi
               ;;
             *)
-              export PKG_CONFIG_PATH=$HOME/x264-win64/lib/pkgconfig:$PKG_CONFIG_PATH
+              # 手动路径
+              X264_PREFIX=$HOME/x264-win64
+              OPENSSL_PREFIX=$HOME/openssl-win64
 
-              # 使用 LLVM-mingw 的 pkg-config
-              TOOLCHAIN=$PWD/llvm-mingw/llvm-mingw-20240820-ucrt-x86_64
-              export PATH=$TOOLCHAIN/bin:$PATH
-
-
-              # 检查哪个 pkg-config 在使用
-              echo "Which pkg-config:"
-              which pkg-config
-              pkg-config --version
+              # 测试编译器
+              echo "Testing compiler..."
+              echo "int main() { return 0; }" > test.c
+              clang test.c -o test.exe
+              if [ -f "test.exe" ]; then
+                echo "Compiler test passed"
+              else
+                echo "Compiler test failed"
+                exit 1
+              fi
               
-              # 验证 pkg-config 能找到所有库
-              echo "x264 version:"
-              pkg-config --modversion x264
-              echo "OpenSSL version:"
-              pkg-config --modversion openssl
+              # 测试链接器与 x264
+              echo "Testing x264 linkage..."
+              echo "extern void x264_encoder_open(); int main() { return 0; }" > test_x264.c
+              clang test_x264.c -L$X264_PREFIX/lib -lx264 -o test_x264.exe
+              if [ -f "test_x264.exe" ]; then
+                echo "x264 linkage test passed"
+              else
+                echo "x264 linkage test failed"
+              fi
+              
+              # 测试链接器与 OpenSSL
+              echo "Testing OpenSSL linkage..."
+              echo "#include <openssl/ssl.h>" > test_ssl.c
+              echo "int main() { SSL_library_init(); return 0; }" >> test_ssl.c
+              clang test_ssl.c -I$OPENSSL_PREFIX/include -L$OPENSSL_PREFIX/lib -lssl -lcrypto -o test_ssl.exe
+              if [ -f "test_ssl.exe" ]; then
+                echo "OpenSSL linkage test passed"
+              else
+                echo "OpenSSL linkage test failed"
+              fi
 
               set +e
               ./configure --prefix=$PWD/build \
@@ -544,7 +539,10 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
+                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 \
+                --extra-cflags="-I$X264_PREFIX/include -I$OPENSSL_PREFIX/include" \
+                --extra-ldflags="-L$X264_PREFIX/lib -L$OPENSSL_PREFIX/lib" \
+                --extra-libs="-lx264 -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32"
                 ret=$?
                 set -e
                 if [ $ret -ne 0 ]; then
