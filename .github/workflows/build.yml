@@ -225,25 +225,6 @@ jobs:
 
           echo "PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig" >> $GITHUB_ENV
 
-      - name: Test pkg-config before configuring FFmpeg
-        if: startsWith(matrix.triplet, 'windows-')
-        shell: bash
-        run: |
-          
-          echo "测试 pkg-config:"
-          pkg-config --exists x264
-          if [ $? -eq 0 ]; then
-            echo "✅ pkg-config 成功找到 x264"
-            pkg-config --modversion x264
-            pkg-config --cflags x264
-            pkg-config --libs x264
-          else
-            echo "❌ pkg-config 无法找到 x264"
-            echo "可用的 .pc 文件:"
-            find $HOME -name "*.pc" | grep x264 || echo "未找到 x264.pc 文件"
-            exit 1
-          fi
-
       # OpenSSL 构建步骤
       - name: Build OpenSSL for Linux ARM/ARM64
         if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64'
@@ -464,10 +445,66 @@ jobs:
         shell: bash
 
       - name: Package
+        shell: bash
         run: |
           cd build
+          
+          # 设置各平台路径
+          case "${{ matrix.triplet }}" in
+            windows-arm64)
+              X264_PREFIX=$HOME/x264-winarm64
+              OPENSSL_PREFIX=$HOME/openssl-winarm64
+              ;;
+            windows-arm)
+              X264_PREFIX=$HOME/x264-winarm
+              OPENSSL_PREFIX=$HOME/openssl-winarm
+              ;;
+            windows-amd64)
+              X264_PREFIX=$HOME/x264-win64
+              OPENSSL_PREFIX=$HOME/openssl-win64
+              ;;
+            windows-386)
+              X264_PREFIX=$HOME/x264-i686
+              OPENSSL_PREFIX=$HOME/openssl-win32
+              ;;
+            linux-arm64)
+              X264_PREFIX=$HOME/x264-arm64
+              OPENSSL_PREFIX=$HOME/openssl-arm64
+              ;;
+            linux-arm)
+              X264_PREFIX=$HOME/x264-arm
+              OPENSSL_PREFIX=$HOME/openssl-arm
+              ;;
+            *)
+              X264_PREFIX=""
+              OPENSSL_PREFIX=""
+              ;;
+          esac
+          
+          # 创建目录结构
+          mkdir -p lib include
+          
+          # 拷贝 x264
+          if [ -n "$X264_PREFIX" ]; then
+            [ -f "$X264_PREFIX/lib/libx264.a" ] && cp "$X264_PREFIX/lib/libx264.a" lib/
+            [ -d "$X264_PREFIX/include" ] && cp -r "$X264_PREFIX/include/"* include/ 2>/dev/null || true
+          fi
+          
+          # 拷贝 OpenSSL
+          if [ -n "$OPENSSL_PREFIX" ]; then
+            # 查找 OpenSSL 库文件
+            find "$OPENSSL_PREFIX" -name "*.a" -exec cp {} lib/ \; 2>/dev/null || true
+            [ -d "$OPENSSL_PREFIX/include" ] && cp -r "$OPENSSL_PREFIX/include/"* include/ 2>/dev/null || true
+          fi
+          
+          echo "=== 最终打包内容 ==="
+          echo "库文件:"
+          ls -la lib/ || echo "无库文件"
+          echo "头文件:"
+          find include -type f | head -10 || echo "无头文件"
+          
+          # 打包
           zip -r ../ffmpeg-${{ matrix.triplet }}.zip *
-        shell: bash
 
       - name: Upload release
         uses: softprops/action-gh-release@v1
