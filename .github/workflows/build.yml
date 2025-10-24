@@ -260,30 +260,15 @@ jobs:
               EXTRA="no-tests"
               ;;
             windows-arm)
-              CROSS=armv7-w64-mingw32
-              CONF=mingw
               PREFIX=$HOME/openssl-winarm
-              # 对于 Windows ARM，使用更简单的配置
-              EXTRA="no-asm no-shared no-tests -static"
-              export RC=llvm-windres
-              export WINDRES=llvm-windres
-              # 设置正确的工具链变量
-              export CC=clang
-              export AR=llvm-ar
-              export RANLIB=llvm-ranlib
-              export STRIP=llvm-strip
+              # 对于 Windows ARM，使用更简化的配置
+              EXTRA="no-asm no-shared no-tests no-stdio no-ui-console no-tests -static"
+              TARGET="armv7-w64-mingw32"
               ;;
             windows-arm64)
-              CROSS=aarch64-w64-mingw32
-              CONF=mingw64
               PREFIX=$HOME/openssl-winarm64
-              EXTRA="no-asm no-shared no-tests -static"
-              export RC=llvm-windres
-              export WINDRES=llvm-windres
-              export CC=clang
-              export AR=llvm-ar
-              export RANLIB=llvm-ranlib
-              export STRIP=llvm-strip
+              EXTRA="no-asm no-shared no-tests no-stdio no-ui-console no-tests -static"
+              TARGET="aarch64-w64-mingw32"
               ;;
             windows-386)
               CROSS=i686-w64-mingw32
@@ -297,18 +282,23 @@ jobs:
           tar -xf openssl-3.3.2.tar.gz
           cd openssl-3.3.2
 
-          # 对于 Windows ARM 目标，使用不同的配置方式
+          # 对于 Windows ARM 目标，使用不同的方法
           if [[ "${{ matrix.triplet }}" == "windows-arm" || "${{ matrix.triplet }}" == "windows-arm64" ]]; then
-            # 使用 clang 直接编译，而不是通过交叉编译前缀
-            if [[ "${{ matrix.triplet }}" == "windows-arm" ]]; then
-              ./Configure $CONF $EXTRA \
-                --prefix=$PREFIX --openssldir=$PREFIX/ssl \
-                -target armv7-w64-mingw32
-            else
-              ./Configure $CONF $EXTRA \
-                --prefix=$PREFIX --openssldir=$PREFIX/ssl \
-                -target aarch64-w64-mingw32
-            fi
+            # 方法1：使用通用的配置，然后手动调整
+            ./config $EXTRA --prefix=$PREFIX --openssldir=$PREFIX/ssl
+            
+            # 修改 Makefile 以使用正确的工具链
+            sed -i "s/^CC=.*/CC=clang -target $TARGET/" Makefile
+            sed -i "s/^AR=.*/AR=llvm-ar/" Makefile
+            sed -i "s/^RANLIB=.*/RANLIB=llvm-ranlib/" Makefile
+            sed -i "s/^RC=.*/RC=echo/" Makefile
+            sed -i "s/^WINDRES=.*/WINDRES=echo/" Makefile
+            sed -i "s/^NM=.*/NM=llvm-nm/" Makefile
+            
+            # 添加必要的标志
+            echo "CFLAGS += -target $TARGET" >> Makefile
+            echo "CXXFLAGS += -target $TARGET" >> Makefile
+            echo "LDFLAGS += -target $TARGET" >> Makefile
           else
             ./Configure $CONF $EXTRA \
               --cross-compile-prefix=$CROSS- \
