@@ -134,7 +134,7 @@ jobs:
             --disable-cli \
             --enable-pic \
             --prefix=$HOME/x264-i386 \
-            --extra-cflags="-m32 -march=pentiumpro" \
+            --extra-cflags="-m32 -march=i686" \
             --extra-ldflags="-m32"
           make -j"$(nproc)"
           make install
