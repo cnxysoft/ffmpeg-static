@@ -576,7 +576,7 @@ jobs:
               ;;
             linux-386)
               X264_PREFIX=$HOME/x264-i386
-              OPENSSL_PREFIX=$HOME/openssl-linux32
+              OPENSSL_PREFIX=$HOME/openssl-386
               ;;
             windows-arm64)
               X264_PREFIX=$HOME/x264-winarm64
