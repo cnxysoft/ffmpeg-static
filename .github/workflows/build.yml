@@ -63,12 +63,10 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y \
               gcc-multilib g++-multilib \
-              yasm nasm pkg-config build-essential \
-              libx264-dev:i386 libssl-dev:i386
+              yasm nasm pkg-config build-essential
           else
             sudo apt-get install -y \
-              yasm nasm pkg-config build-essential \
-              libx264-dev libssl-dev
+              yasm nasm pkg-config build-essential
           fi
 
       - name: Install deps (Linux ARM/ARM64)
@@ -83,7 +81,7 @@ jobs:
       # macOS 依赖
       - name: Install deps (macOS)
         if: runner.os == 'macOS'
-        run: brew install yasm nasm x264 openssl
+        run: brew install yasm nasm
 
       # Windows 交叉编译依赖 (在 Ubuntu 上)
       - name: Install Windows cross-compilation deps
@@ -111,7 +109,65 @@ jobs:
             ln -sf $TOOLCHAIN/bin/llvm-windres $TOOLCHAIN/bin/${triplet}-windres
           done
 
-      # x264 构建步骤 (保持不变)
+      # x264 构建步骤
+      - name: Build and install x264 (Linux amd64)
+        if: matrix.triplet == 'linux-amd64'
+        run: |
+          git clone --depth 1 https://code.videolan.org/videolan/x264.git
+          cd x264
+          ./configure \
+            --enable-static \
+            --disable-cli \
+            --enable-pic \
+            --prefix=$HOME/x264-amd64
+          make -j"$(nproc)"
+          make install
+          echo "PKG_CONFIG_PATH=$HOME/x264-amd64/lib/pkgconfig" >> $GITHUB_ENV
+
+      - name: Build and install x264 (Linux 386)
+        if: matrix.triplet == 'linux-386'
+        run: |
+          git clone --depth 1 https://code.videolan.org/videolan/x264.git
+          cd x264
+          ./configure \
+            --enable-static \
+            --disable-cli \
+            --enable-pic \
+            --prefix=$HOME/x264-i386 \
+            --extra-cflags="-m32" \
+            --extra-ldflags="-m32"
+          make -j"$(nproc)"
+          make install
+          echo "PKG_CONFIG_PATH=$HOME/x264-i386/lib/pkgconfig" >> $GITHUB_ENV
+
+      - name: Build and install x264 (macOS amd64)
+        if: matrix.triplet == 'darwin-amd64'
+        run: |
+          git clone --depth 1 https://code.videolan.org/videolan/x264.git
+          cd x264
+          ./configure \
+            --enable-static \
+            --disable-cli \
+            --enable-pic \
+            --prefix=$HOME/x264-darwin-amd64
+          make -j"$(sysctl -n hw.ncpu)"
+          make install
+          echo "PKG_CONFIG_PATH=$HOME/x264-darwin-amd64/lib/pkgconfig" >> $GITHUB_ENV
+
+      - name: Build and install x264 (macOS arm64)
+        if: matrix.triplet == 'darwin-arm64'
+        run: |
+          git clone --depth 1 https://code.videolan.org/videolan/x264.git
+          cd x264
+          ./configure \
+            --enable-static \
+            --disable-cli \
+            --enable-pic \
+            --prefix=$HOME/x264-darwin-arm64
+          make -j"$(sysctl -n hw.ncpu)"
+          make install
+          echo "PKG_CONFIG_PATH=$HOME/x264-darwin-arm64/lib/pkgconfig" >> $GITHUB_ENV
+
       - name: Build and install x264 (Linux arm cross)
         if: matrix.triplet == 'linux-arm'
         run: |
@@ -226,6 +282,54 @@ jobs:
           echo "PKG_CONFIG_PATH=$HOME/x264-winarm64/lib/pkgconfig" >> $GITHUB_ENV
 
       # OpenSSL 构建步骤
+      - name: Build OpenSSL for Linux amd64
+        if: matrix.triplet == 'linux-amd64'
+        shell: bash
+        run: |
+          curl -LO https://www.openssl.org/source/openssl-3.3.2.tar.gz
+          tar -xf openssl-3.3.2.tar.gz
+          cd openssl-3.3.2
+          ./Configure linux-x86_64 no-shared no-tests --prefix=$HOME/openssl-amd64
+          make -j"$(nproc)"
+          make install_sw
+          echo "OPENSSL_PREFIX=$HOME/openssl-amd64" >> $GITHUB_ENV
+
+      - name: Build OpenSSL for Linux 386
+        if: matrix.triplet == 'linux-386'
+        shell: bash
+        run: |
+          curl -LO https://www.openssl.org/source/openssl-3.3.2.tar.gz
+          tar -xf openssl-3.3.2.tar.gz
+          cd openssl-3.3.2
+          ./Configure linux-elf no-shared no-tests -m32 --prefix=$HOME/openssl-386
+          make -j"$(nproc)"
+          make install_sw
+          echo "OPENSSL_PREFIX=$HOME/openssl-386" >> $GITHUB_ENV
+
+      - name: Build OpenSSL for macOS amd64
+        if: matrix.triplet == 'darwin-amd64'
+        shell: bash
+        run: |
+          curl -LO https://www.openssl.org/source/openssl-3.3.2.tar.gz
+          tar -xf openssl-3.3.2.tar.gz
+          cd openssl-3.3.2
+          ./Configure darwin64-x86_64-cc no-shared no-tests --prefix=$HOME/openssl-darwin-amd64
+          make -j"$(sysctl -n hw.ncpu)"
+          make install_sw
+          echo "OPENSSL_PREFIX=$HOME/openssl-darwin-amd64" >> $GITHUB_ENV
+
+      - name: Build OpenSSL for macOS arm64
+        if: matrix.triplet == 'darwin-arm64'
+        shell: bash
+        run: |
+          curl -LO https://www.openssl.org/source/openssl-3.3.2.tar.gz
+          tar -xf openssl-3.3.2.tar.gz
+          cd openssl-3.3.2
+          ./Configure darwin64-arm64-cc no-shared no-tests --prefix=$HOME/openssl-darwin-arm64
+          make -j"$(sysctl -n hw.ncpu)"
+          make install_sw
+          echo "OPENSSL_PREFIX=$HOME/openssl-darwin-arm64" >> $GITHUB_ENV
+
       - name: Build OpenSSL for Linux ARM/ARM64
         if: matrix.triplet == 'linux-arm' || matrix.triplet == 'linux-arm64'
         shell: bash
@@ -316,7 +420,7 @@ jobs:
         run: |
           case "${{ matrix.triplet }}" in
             linux-386)
-              export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
+              export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig
               ./configure --arch=i686 --target-os=linux --prefix=$PWD/build \
                 --cc="gcc -m32" --cxx="g++ -m32" \
                 --enable-static --disable-shared \
@@ -427,7 +531,7 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-version3 --enable-openssl --enable-gpl --enable-libx264
+                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ;;
           esac
 
@@ -451,6 +555,22 @@ jobs:
           
           # 设置各平台路径
           case "${{ matrix.triplet }}" in
+            darwin-arm64)
+              X264_PREFIX=$HOME/x264-darwin-arm64
+              OPENSSL_PREFIX=$HOME/openssl-darwin-arm64
+              ;;
+            darwin-amd64)
+              X264_PREFIX=$HOME/x264-darwin-amd64
+              OPENSSL_PREFIX=$HOME/openssl-darwin-amd64
+              ;;
+            linux-amd64)
+              X264_PREFIX=$HOME/x264-amd64
+              OPENSSL_PREFIX=$HOME/openssl-amd64
+              ;;
+            linux-386)
+              X264_PREFIX=$HOME/x264-i386
+              OPENSSL_PREFIX=$HOME/openssl-linux32
+              ;;
             windows-arm64)
               X264_PREFIX=$HOME/x264-winarm64
               OPENSSL_PREFIX=$HOME/openssl-winarm64
