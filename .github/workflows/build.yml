@@ -464,7 +464,6 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=gif --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-pixel-format=pal8 --enable-pixel-format=yuv420p \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config=pkg-config \
                 --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
               ;;
@@ -514,7 +513,6 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=gif --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-pixel-format=pal8 --enable-pixel-format=yuv420p \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 \
                 --extra-cflags="-I$X264_PREFIX/include -I$OPENSSL_PREFIX/include" \
                 --extra-ldflags="-L$X264_PREFIX/lib -L$SSL_LIB_PATH -static" \
@@ -533,7 +531,6 @@ jobs:
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
                 --enable-encoder=gif --enable-encoder=libx264 --enable-encoder=aac \
-                --enable-pixel-format=pal8 --enable-pixel-format=yuv420p \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ret=$?
               set -e
