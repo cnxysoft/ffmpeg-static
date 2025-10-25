@@ -458,12 +458,13 @@ jobs:
               ./configure --arch=$ARCH --target-os=linux --cross-prefix=$CROSS_PREFIX --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
-                --disable-avdevice \
+                --disable-avdevice --enable-swscale \
                 --enable-protocol=http --enable-protocol=https \
                 --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
-                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-encoder=gif --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-pixel-format=pal8 --enable-pixel-format=yuv420p \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config=pkg-config \
                 --extra-cflags="-I$OPENSSL_PREFIX/include" --extra-ldflags="-L$OPENSSL_PREFIX/lib"
               ;;
@@ -507,12 +508,13 @@ jobs:
               ./configure --arch=$ARCH --target-os=win32 --cross-prefix=$CROSS_PREFIX --prefix=$PWD/build \
                 --enable-cross-compile --enable-static --disable-shared --disable-mediafoundation \
                 --disable-programs --disable-doc --disable-debug \
-                --disable-avdevice \
+                --disable-avdevice --enable-swscale \
                 --enable-protocol=http --enable-protocol=https \
                 --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
-                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-encoder=gif --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-pixel-format=pal8 --enable-pixel-format=yuv420p \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 \
                 --extra-cflags="-I$X264_PREFIX/include -I$OPENSSL_PREFIX/include" \
                 --extra-ldflags="-L$X264_PREFIX/lib -L$SSL_LIB_PATH -static" \
@@ -525,12 +527,13 @@ jobs:
               ./configure --prefix=$PWD/build \
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
-                --disable-avdevice \
+                --disable-avdevice --enable-swscale \
                 --enable-protocol=http --enable-protocol=https \
                 --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --enable-muxer=mp4 --enable-muxer=gif \
                 --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
-                --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-encoder=gif --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-pixel-format=pal8 --enable-pixel-format=yuv420p \
                 --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config="pkg-config --static"
               ret=$?
               set -e
