@@ -420,7 +420,7 @@ jobs:
         run: |
           case "${{ matrix.triplet }}" in
             linux-386)
-              export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig
+              export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig:$HOME/x264-i386/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig
               ./configure --arch=i686 --target-os=linux --prefix=$PWD/build \
                 --cc="gcc -m32" --cxx="g++ -m32" \
                 --enable-static --disable-shared \
