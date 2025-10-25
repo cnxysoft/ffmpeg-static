@@ -133,8 +133,9 @@ jobs:
             --enable-static \
             --disable-cli \
             --enable-pic \
+            --disable-asm \
             --prefix=$HOME/x264-i386 \
-            --extra-cflags="-m32 -march=i686 -mmmx -msse" \
+            --extra-cflags="-m32" \
             --extra-ldflags="-m32"
           make -j"$(nproc)"
           make install
