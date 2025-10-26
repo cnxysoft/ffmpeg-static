@@ -150,9 +150,16 @@ jobs:
             --enable-static \
             --disable-cli \
             --enable-pic \
-            --prefix=$HOME/x264-darwin-amd64
+            --prefix=$HOME/x264-darwin-amd64 \
+            --host=x86_64-apple-darwin \
+            CC="clang -arch x86_64"
           make -j"$(sysctl -n hw.ncpu)"
           make install
+          # verify
+          if [ ! -f "$HOME/x264-darwin-amd64/lib/libx264.a" ]; then
+            echo "x264 darwin-amd64 build missing libx264.a"
+            exit 1
+          fi
           echo "PKG_CONFIG_PATH=$HOME/x264-darwin-amd64/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Build and install x264 (macOS arm64)
@@ -317,6 +324,11 @@ jobs:
           ./Configure darwin64-x86_64-cc no-shared no-tests --prefix=$HOME/openssl-darwin-amd64
           make -j"$(sysctl -n hw.ncpu)"
           make install_sw
+          # verify libs
+          if ! compgen -G "$HOME/openssl-darwin-amd64/lib/*.a" > /dev/null; then
+            echo "OpenSSL darwin-amd64 static libs not found"
+            exit 1
+          fi
           echo "OPENSSL_PREFIX=$HOME/openssl-darwin-amd64" >> $GITHUB_ENV
 
       - name: Build OpenSSL for macOS arm64
@@ -524,9 +536,36 @@ jobs:
                 --extra-ldflags="-L$X264_PREFIX/lib -L$SSL_LIB_PATH -static" \
                 --extra-libs="-lx264 -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32"
               ;;
-
+            darwin-amd64)
+              X264_PREFIX=$HOME/x264-darwin-amd64
+              OPENSSL_PREFIX=$HOME/openssl-darwin-amd64
+              export PKG_CONFIG_PATH=$X264_PREFIX/lib/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig
+              set +e
+              ./configure --arch=x86_64 --target-os=darwin --prefix=$PWD/build \
+                --cc="clang -arch x86_64" \
+                --enable-static --disable-shared \
+                --disable-programs --disable-doc --disable-debug \
+                --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
+                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls --enable-protocol=tls --enable-protocol=tcp --enable-protocol=file --enable-protocol=httpproxy \
+                --disable-avdevice --disable-swresample --disable-postproc --enable-swscale \
+                --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format --enable-filter=scale \
+                --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
+                --disable-muxers --enable-muxer=mp4 --enable-muxer=gif \
+                --disable-decoders --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
+                --disable-encoders --enable-encoder=gif --enable-encoder=libx264 --enable-encoder=aac \
+                --enable-version3 --enable-openssl --enable-gpl --enable-libx264 --pkg-config=pkg-config \
+                --extra-cflags="-I$OPENSSL_PREFIX/include -I$X264_PREFIX/include" \
+                --extra-ldflags="-L$X264_PREFIX/lib -L$OPENSSL_PREFIX/lib"
+              ret=$?
+              set -e
+              if [ $ret -ne 0 ]; then
+                echo "=== CONFIG.LOG (last 100 lines) ==="
+                tail -n 100 ffbuild/config.log || true
+                exit $ret
+              fi
+              ;;
             *)
-              # macOS 和其他原生构建
+              # macOS (arm64) 和其他原生构建
               set +e
               ./configure --prefix=$PWD/build \
                 --enable-static --disable-shared \
