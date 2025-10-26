@@ -430,7 +430,7 @@ jobs:
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
                 --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls --enable-protocol=tls --enable-protocol=tcp --enable-protocol=file --enable-protocol=httpproxy \
                 --disable-avdevice --disable-swresample --disable-postproc \
-                --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
+                --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format --enable-filter=scale \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --disable-muxers --enable-muxer=mp4 --enable-muxer=gif \
                 --disable-decoders --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
@@ -463,7 +463,7 @@ jobs:
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
                 --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls --enable-protocol=tls --enable-protocol=tcp --enable-protocol=file --enable-protocol=httpproxy \
                 --disable-avdevice --disable-swresample --disable-postproc \
-                --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
+                --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format --enable-filter=scale \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --disable-muxers --enable-muxer=mp4 --enable-muxer=gif \
                 --disable-decoders --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
@@ -514,7 +514,7 @@ jobs:
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
                 --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls --enable-protocol=tls --enable-protocol=tcp --enable-protocol=file --enable-protocol=httpproxy \
                 --disable-avdevice --disable-swresample --disable-postproc \
-                --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
+                --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format --enable-filter=scale \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --disable-muxers --enable-muxer=mp4 --enable-muxer=gif \
                 --disable-decoders --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
@@ -534,7 +534,7 @@ jobs:
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
                 --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls --enable-protocol=tls --enable-protocol=tcp --enable-protocol=file --enable-protocol=httpproxy \
                 --disable-avdevice --disable-swresample --disable-postproc \
-                --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
+                --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format --enable-filter=scale \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --disable-muxers --enable-muxer=mp4 --enable-muxer=gif \
                 --disable-decoders --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
