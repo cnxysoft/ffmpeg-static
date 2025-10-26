@@ -428,7 +428,7 @@ jobs:
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
-                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls \
+                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=tls --enable-protocol=tcp \
                 --disable-avdevice --disable-swresample --disable-postproc \
                 --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
@@ -461,7 +461,7 @@ jobs:
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
-                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls \
+                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=tls --enable-protocol=tcp \
                 --disable-avdevice --disable-swresample --disable-postproc \
                 --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
@@ -512,7 +512,7 @@ jobs:
                 --enable-cross-compile --enable-static --disable-shared --disable-mediafoundation \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
-                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls \
+                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=tls --enable-protocol=tcp \
                 --disable-avdevice --disable-swresample --disable-postproc \
                 --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
@@ -532,7 +532,7 @@ jobs:
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
-                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls \
+                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=tls --enable-protocol=tcp \
                 --disable-avdevice --disable-swresample --disable-postproc \
                 --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
