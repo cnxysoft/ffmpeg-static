@@ -428,10 +428,9 @@ jobs:
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
-                --disable-protocols --enable-protocol=http --enable-protocol=https \
+                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls \
                 --disable-avdevice --disable-swresample --disable-postproc \
                 --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
-                --enable-protocol=http --enable-protocol=https \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --disable-muxers --enable-muxer=mp4 --enable-muxer=gif \
                 --disable-decoders --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
@@ -462,10 +461,9 @@ jobs:
                 --enable-cross-compile --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
-                --disable-protocols --enable-protocol=http --enable-protocol=https \
+                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls \
                 --disable-avdevice --disable-swresample --disable-postproc \
                 --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
-                --enable-protocol=http --enable-protocol=https \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --disable-muxers --enable-muxer=mp4 --enable-muxer=gif \
                 --disable-decoders --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
@@ -514,10 +512,9 @@ jobs:
                 --enable-cross-compile --enable-static --disable-shared --disable-mediafoundation \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
-                --disable-protocols --enable-protocol=http --enable-protocol=https \
+                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls \
                 --disable-avdevice --disable-swresample --disable-postproc \
                 --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
-                --enable-protocol=http --enable-protocol=https \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --disable-muxers --enable-muxer=mp4 --enable-muxer=gif \
                 --disable-decoders --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
@@ -535,10 +532,9 @@ jobs:
                 --enable-static --disable-shared \
                 --disable-programs --disable-doc --disable-debug \
                 --disable-iconv --disable-bzlib --disable-lzma --disable-zlib \
-                --disable-protocols --enable-protocol=http --enable-protocol=https \
+                --disable-protocols --enable-protocol=http --enable-protocol=https --enable-protocol=hls \
                 --disable-avdevice --disable-swresample --disable-postproc \
                 --disable-filters --enable-filter=palettegen --enable-filter=paletteuse --enable-filter=fps --enable-filter=split --enable-filter=format \
-                --enable-protocol=http --enable-protocol=https \
                 --disable-demuxers --enable-demuxer=mov --enable-demuxer=hls --enable-demuxer=aac --enable-demuxer=mp3 \
                 --disable-muxers --enable-muxer=mp4 --enable-muxer=gif \
                 --disable-decoders --enable-decoder=h264 --enable-decoder=aac --enable-decoder=mp3 \
