@@ -38,13 +38,16 @@ if os.name == "nt":
     raise SystemExit(0)
 
 if os.environ.get("TARGET_RUNNER"):
-    # Host ldd cannot inspect an ARM executable. Resolve through its target loader.
-    loader = os.path.join(os.environ.get("QEMU_LD_PREFIX", "/usr/arm-linux-gnueabihf"), "lib/ld-linux-armhf.so.3")
-    command = [os.environ["TARGET_RUNNER"], loader, "--list", args.binary]
+    # Host ldd cannot inspect ARM. Let QEMU load the executable normally and
+    # request glibc's dependency trace in the guest, without executing main.
+    # Setting LD_TRACE_LOADED_OBJECTS in the host would trace the wrapper itself.
+    command = [os.environ["TARGET_RUNNER"], "-E", "LD_TRACE_LOADED_OBJECTS=1", args.binary]
 else:
     command = ["ldd", args.binary]
 report = subprocess.check_output(command, text=True)
 print(report)
+if not re.search(r"\blibc\.so\.6\b", report):
+    raise SystemExit("Cannot verify consumer's resolved libc dependency")
 if "not found" in report:
     raise SystemExit("Missing consumer dependency:\n" + report)
 if re.search(r"\blib(?:avcodec|avformat|avfilter|avutil|swscale|ssl|crypto|x264)[-.]", report):
