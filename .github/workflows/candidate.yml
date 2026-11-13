@@ -102,7 +102,16 @@ jobs:
           "${elevate[@]}" apt-get install -y build-essential nasm pkg-config perl python3 curl xz-utils git ca-certificates file
           case "$TARGET" in
             linux-386) sudo apt-get install -y gcc-i686-linux-gnu libc6-i386 ;;
-            linux-arm) sudo apt-get install -y gcc-arm-linux-gnueabihf qemu-user ;;
+            linux-arm)
+              sudo apt-get install -y gcc-arm-linux-gnueabihf
+              # Jammy qemu-user 6.2 corrupts Go ARM concurrent execution. Use
+              # Noble's static emulator without changing the target's libc.
+              QEMU_DEB="$RUNNER_TEMP/qemu-user-static.deb"
+              curl --fail --location --retry 3 -o "$QEMU_DEB" https://archive.ubuntu.com/ubuntu/pool/universe/q/qemu/qemu-user-static_8.2.2%2bds-0ubuntu1.18_amd64.deb
+              printf '%s  %s\n' 5bb397f66063efa349f6fd5cb3b68cd96f29edd0994e4ba5115cf0859a716bf0 "$QEMU_DEB" | sha256sum -c -
+              dpkg-deb -x "$QEMU_DEB" "$RUNNER_TEMP/ddbot-qemu"
+              echo "QEMU_ARM=$RUNNER_TEMP/ddbot-qemu/usr/bin/qemu-arm-static" >> "$GITHUB_ENV"
+              ;;
           esac
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
