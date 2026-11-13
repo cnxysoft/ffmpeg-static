@@ -30,5 +30,7 @@ Linux amd64 / ARM64 的候选 CI 还检出工作流固定 SHA 的 DDBOT 消费�
 
 随后构建完整 DDBOT，记录源码 SHA、Go 版本、ELF 架构、文件大小、动态依赖及 GLIBC
 符号版本，并生成可独立校验的 SHA-256。`consumer/dependencies.py` 拒绝缺失依赖或意外
-动态链接的 FFmpeg / OpenSSL / x264；它记录实际 glibc 要求，不承诺旧系统兼容性。
+动态链接的 FFmpeg / OpenSSL / x264，并要求最高 GLIBC 符号版本不超过 2.35。
+两种 Linux 架构均使用 Ubuntu 22.04 用户空间构建；ARM64 在原生 runner 上使用该容器，
+避免新宿主系统提高动态链接基线。符号检查不替代具体旧系统上的完整运行验收。
 macOS / Windows CI 当前验证库能力、网络读取和迁移链接；完整消费方验证范围另见验证记录。

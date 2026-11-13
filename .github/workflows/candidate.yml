@@ -27,6 +27,7 @@ jobs:
             shell: bash
           - os: ubuntu-24.04-arm
             shell: bash
+            container: ubuntu:22.04
           - os: macos-15-intel
             shell: bash
           - os: macos-15
@@ -34,6 +35,7 @@ jobs:
           - os: windows-2022
             shell: 'msys2 {0}'
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     defaults:
       run:
         shell: ${{ matrix.shell }}
@@ -42,8 +44,10 @@ jobs:
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential nasm pkg-config perl python3 curl xz-utils
+          set -euo pipefail
+          if command -v sudo >/dev/null; then elevate=(sudo); else elevate=(); fi
+          "${elevate[@]}" apt-get update
+          "${elevate[@]}" apt-get install -y build-essential nasm pkg-config perl python3 curl xz-utils git ca-certificates
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run: brew install nasm pkg-config openssl@3
@@ -102,7 +106,7 @@ jobs:
             stat -c '%s bytes' "$BINARY"
             ldd "$BINARY"
             readelf --version-info "$BINARY"
-            python3 ../tests/consumer/dependencies.py "$BINARY"
+            python3 ../tests/consumer/dependencies.py "$BINARY" --max-glibc 2.35
           } | tee ../candidate-build/consumer-build-info.txt
           (cd ../candidate-build && sha256sum "$BINARY_NAME" > "$BINARY_NAME.sha256")
       - name: Upload validated candidate
