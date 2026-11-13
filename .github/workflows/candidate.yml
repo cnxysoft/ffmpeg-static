@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  DDBOT_CONSUMER_REF: 4cd840653327aa4707ce2b71e35b5eaa2f64bd35
+
 concurrency:
   group: minimal-candidate-${{ github.ref }}
   cancel-in-progress: true
@@ -21,6 +24,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
+            shell: bash
+          - os: ubuntu-24.04-arm
             shell: bash
           - os: macos-15-intel
             shell: bash
@@ -60,6 +65,46 @@ jobs:
             export OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
           fi
           bash scripts/build-native.sh "$PWD/candidate-build" 2>&1 | tee candidate-build.log
+      - name: Checkout pinned DDBOT consumer
+        if: runner.os == 'Linux'
+        uses: actions/checkout@v4
+        with:
+          repository: cnxysoft/DDBOT-WSa
+          ref: ${{ env.DDBOT_CONSUMER_REF }}
+          path: ddbot-consumer
+          persist-credentials: false
+      - name: Set up Go for consumer validation
+        if: runner.os == 'Linux'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ddbot-consumer/go.mod
+          cache-dependency-path: |
+            ddbot-consumer/go.sum
+            ddbot-consumer/**/go.sum
+      - name: Test and build DDBOT with the candidate
+        if: runner.os == 'Linux'
+        working-directory: ddbot-consumer
+        env:
+          CGO_ENABLED: '1'
+          DDBOT_FFMPEG_FIXTURES: ${{ github.workspace }}/tests/data
+        run: |
+          set -euo pipefail
+          cp -R ../candidate-build/package ffmpeg/ffmpeg-static
+          cp ../tests/consumer/fixtures_test.go ffmpeg/candidate_fixtures_test.go
+          go test -v -tags ffmpeg_minimal ./ffmpeg 2>&1 | tee ../candidate-build/ddbot-tests.log
+          BINARY_NAME="DDBOT-candidate-linux-$(go env GOARCH)"
+          BINARY="../candidate-build/$BINARY_NAME"
+          go build -tags ffmpeg_minimal -trimpath -ldflags='-s -w' -o "$BINARY" ./cmd 2>&1 | tee ../candidate-build/ddbot-build.log
+          {
+            printf 'DDBOT source: %s\n' '${{ env.DDBOT_CONSUMER_REF }}'
+            go version
+            file "$BINARY"
+            stat -c '%s bytes' "$BINARY"
+            ldd "$BINARY"
+            readelf --version-info "$BINARY"
+            python3 ../tests/consumer/dependencies.py "$BINARY"
+          } | tee ../candidate-build/consumer-build-info.txt
+          (cd ../candidate-build && sha256sum "$BINARY_NAME" > "$BINARY_NAME.sha256")
       - name: Upload validated candidate
         uses: actions/upload-artifact@v4
         with:
@@ -67,6 +112,16 @@ jobs:
           path: |
             candidate-build/ffmpeg-*-candidate.zip
             candidate-build/ffmpeg-*-candidate.zip.sha256
+          if-no-files-found: error
+      - name: Upload validated DDBOT consumer
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddbot-${{ matrix.os }}
+          path: |
+            candidate-build/DDBOT-candidate-*
+            candidate-build/consumer-build-info.txt
+            candidate-build/ddbot-*.log
           if-no-files-found: error
       - name: Upload build diagnostics
         if: always()
@@ -77,4 +132,6 @@ jobs:
             candidate-build.log
             candidate-build/package/build-info/
             candidate-build/ffmpeg-*/ffbuild/config.log
+            candidate-build/ddbot-*.log
+            candidate-build/consumer-build-info.txt
           if-no-files-found: ignore
