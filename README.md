@@ -60,6 +60,14 @@ OpenSSL **3.5.9** 已在本机完成静态构建，关闭应用程序、测试�
 未通过大范围删除算法进一步压缩，避免影响 TLS 协商和证书兼容性。
 上表为包含新版 OpenSSL 的最终本机对比，不代表 10 个平台均已验证。
 
+Linux amd64 另在 WSL / Ubuntu 24.04 / GCC 13.3 / NASM 2.16.01 下完成 DDBOT 媒体回归和
+成品构建：同一份源码、Go 1.26.2 及相同构建参数下，现有发布库生成 **42.27 MB**，
+候选库生成 **36.67 MB**，减少约 **13.3%**。候选程序仅依赖系统 libc、libm 和动态加载器，
+不需要额外安装共享 FFmpeg / OpenSSL。发布库与候选库的编译器不同，仍不能归因于单个开关。
+
+四个平台的远端构建、22 项链路检查和迁移链接验证现已全部通过，产物的逐文件哈希也已复核。
+平台、产物大小、源码提交及验收范围见 [跨平台验证记录](docs/validation-2026-11-13.md)。
+
 ## 候选构建与验收
 
 `versions.env` 固定 FFmpeg / OpenSSL 版本和官方源码 SHA-256。
@@ -90,7 +98,7 @@ Windows 使用原生 MinGW GCC 与 MSYS2 Perl。Git 自带的精简 Perl 通常�
 测试创建临时证书，不访问公网；生成证书的 CLI 与被测静态 TLS 实现彼此独立。
 具体范围见 [tests/README.md](tests/README.md)。
 
-`.github/workflows/candidate.yml` 仅手动触发，分别使用 Linux amd64、Windows amd64、
+`.github/workflows/candidate.yml` 支持手动触发和候选分支推送，分别使用 Linux amd64、Windows amd64、
 macOS Intel 和 Apple Silicon 原生 runner 构建并上传候选 artifact，不创建 release。
 其他平台，尤其 Windows ARM/ARM64，仍需专门校正 OpenSSL 目标并验证；
 不将候选配置直接复制到未验证的 10 平台发布矩阵。
@@ -98,6 +106,7 @@ macOS Intel 和 Apple Silicon 原生 runner 构建并上传候选 artifact，不
 ## 发布前的衔接顺序
 
 1. 将 DDBOT 下载静态库的 `releases/latest/download` 改为指定 release，并保持头文件与库同版。
+   配套工作区已固定现有 `v7.1-131`，并加入 10 个平台 ZIP 的 SHA-256 校验。
 2. 为候选库跑全平台构建及 MP4、TS/fMP4 HLS、GIF、HTTPS/代理验收，记录功能、版本、大小和哈希。
 3. 发布新库后，再将 DDBOT 固定到该版本并移除 `-lx264`。当前工作流仍保留原构建，
    避免候选配置未经全平台验证就替换生产产物。
