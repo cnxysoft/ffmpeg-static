@@ -20,6 +20,7 @@ jobs=${JOBS:-4}
 prefix="$work/package"
 ssl_prefix="$work/openssl-install"
 ff_flags=()
+ff_cpu_flags=""
 ff_section_flags="-ffunction-sections -fdata-sections"
 link_flags=(-lm -lpthread)
 ssl_flags=()
@@ -43,12 +44,13 @@ case "$triplet" in
   linux-386)
     ssl_target=linux-x86
     cc=${CC:-i686-linux-gnu-gcc}
-    ff_flags+=(--target-os=linux --arch=x86_32 --enable-cross-compile --cross-prefix=i686-linux-gnu-)
+    ff_flags+=(--target-os=linux --arch=x86_32 --enable-cross-compile --cross-prefix=i686-linux-gnu- --pkg-config=pkg-config)
     ;;
   linux-arm)
     ssl_target=linux-armv4
     cc=${CC:-arm-linux-gnueabihf-gcc}
-    ff_flags+=(--target-os=linux --arch=arm --cpu=armv7-a --enable-cross-compile --cross-prefix=arm-linux-gnueabihf-)
+    ff_flags+=(--target-os=linux --arch=arm --cpu=armv7-a --enable-cross-compile --cross-prefix=arm-linux-gnueabihf- --pkg-config=pkg-config)
+    ff_cpu_flags="-mfpu=vfpv3-d16"
     if [[ -z ${TARGET_RUNNER:-} ]]; then echo "ARM cross validation requires TARGET_RUNNER" >&2; exit 2; fi
     ;;
   windows-amd64) ssl_target=mingw64; cc=${CC:-gcc}; ff_flags+=(--arch=x86_64) ;;
@@ -113,7 +115,7 @@ export PKG_CONFIG_LIBDIR="$ssl_prefix/lib/pkgconfig"
   cd "$work/ffmpeg-$FFMPEG_VERSION"
   bash "$repo/profiles/ddbot-minimal.sh" --prefix="$prefix" --cc="$cc" \
     --pkg-config-flags=--static ${ff_flags[@]+"${ff_flags[@]}"} \
-    --extra-cflags="-I$ssl_prefix/include $ff_section_flags" \
+    --extra-cflags="$ff_cpu_flags -I$ssl_prefix/include $ff_section_flags" \
     --extra-ldflags="-L$ssl_prefix/lib"
   "$make" -j"$jobs"
   "$make" install
@@ -139,7 +141,7 @@ printf 'Target: %s\nHost: %s\nRunner: %s\n' "$triplet" "$(uname -sm)" "${TARGET_
   "$repo/tests/capabilities.c" -L"$prefix/lib" \
   -lavfilter -lavformat -lavcodec -lswscale -lavutil -lssl -lcrypto \
   "${link_flags[@]}" -o "$work/capabilities"
-"${runner[@]}" "$work/capabilities" | tee "$prefix/build-info/capabilities.txt"
+${runner[@]+"${runner[@]}"} "$work/capabilities" | tee "$prefix/build-info/capabilities.txt"
 # Check the actual linked versions, then exercise TLS/proxy/HLS before packaging.
 "$python" "$repo/scripts/package.py" check-versions "$prefix/build-info/capabilities.txt" "$repo/versions.env"
 "$python" "$repo/tests/smoke.py" "$work/capabilities" | tee "$prefix/build-info/smoke.txt"
@@ -153,5 +155,5 @@ static_flag=()
 if [[ $triplet == windows-* ]]; then static_flag+=(-static); fi
 "$cc" -std=c11 -Wall -Wextra -Werror -Os "$repo/tests/capabilities.c" \
   "${dependency_flags[@]}" ${static_flag[@]+"${static_flag[@]}"} -o "$work/relocated-capabilities"
-"${runner[@]}" "$work/relocated-capabilities"
+${runner[@]+"${runner[@]}"} "$work/relocated-capabilities"
 echo "Candidate validated: $work/ffmpeg-$triplet-candidate.zip"

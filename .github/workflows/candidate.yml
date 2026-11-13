@@ -11,11 +11,11 @@ permissions:
   contents: read
 
 env:
-  DDBOT_CONSUMER_REF: 4cd840653327aa4707ce2b71e35b5eaa2f64bd35
+  DDBOT_CONSUMER_REF: 109995ce9a8085938c58e109f2832c7248d5de49
   PYTHONUTF8: '1'
 
 concurrency:
-  group: minimal-candidate-${{ github.ref }}
+  group: minimal-candidate-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -70,7 +70,7 @@ jobs:
             arch: '386'
             cc: gcc
             msystem: MINGW32
-            packages: mingw-w64-i686-gcc mingw-w64-i686-nasm mingw-w64-i686-pkgconf mingw-w64-i686-python
+            packages: mingw-w64-i686-gcc mingw-w64-ucrt-x86_64-nasm mingw-w64-i686-pkgconf mingw-w64-i686-python
             shell: 'msys2 {0}'
           - target: windows-arm64
             os: windows-11-arm
@@ -122,6 +122,7 @@ jobs:
           if [[ "${{ runner.os }}" == "macOS" ]]; then
             export OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
           fi
+          if [[ "$TARGET" == windows-386 ]]; then export PATH="$PATH:/ucrt64/bin"; fi
           bash scripts/build-native.sh "$PWD/candidate-build" 2>&1 | tee candidate-build.log
       - name: Checkout pinned DDBOT consumer
         uses: actions/checkout@v4
