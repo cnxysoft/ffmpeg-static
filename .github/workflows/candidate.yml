@@ -5,12 +5,14 @@ on:
   push:
     branches:
       - codex/ffmpeg-minimal-candidate
+      - main
 
 permissions:
   contents: read
 
 env:
   DDBOT_CONSUMER_REF: 4cd840653327aa4707ce2b71e35b5eaa2f64bd35
+  PYTHONUTF8: '1'
 
 concurrency:
   group: minimal-candidate-${{ github.ref }}
@@ -18,24 +20,74 @@ concurrency:
 
 jobs:
   native:
-    timeout-minutes: 45
+    name: Validate ${{ matrix.target }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          - target: linux-amd64
+            os: ubuntu-22.04
+            arch: amd64
+            cc: cc
             shell: bash
-          - os: ubuntu-24.04-arm
+          - target: linux-386
+            os: ubuntu-22.04
+            arch: '386'
+            cc: i686-linux-gnu-gcc
+            shell: bash
+          - target: linux-arm
+            os: ubuntu-22.04
+            arch: arm
+            cc: arm-linux-gnueabihf-gcc
+            wrapper: scripts/run-armhf.sh
+            shell: bash
+          - target: linux-arm64
+            os: ubuntu-24.04-arm
+            arch: arm64
+            cc: cc
             shell: bash
             container: ubuntu:22.04
-          - os: macos-15-intel
+          - target: darwin-amd64
+            os: macos-15-intel
+            arch: amd64
+            cc: cc
             shell: bash
-          - os: macos-15
+          - target: darwin-arm64
+            os: macos-15
+            arch: arm64
+            cc: cc
             shell: bash
-          - os: windows-2022
+          - target: windows-amd64
+            os: windows-2022
+            arch: amd64
+            cc: gcc
+            msystem: UCRT64
+            packages: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-python
+            shell: 'msys2 {0}'
+          - target: windows-386
+            os: windows-2022
+            arch: '386'
+            cc: gcc
+            msystem: MINGW32
+            packages: mingw-w64-i686-gcc mingw-w64-i686-nasm mingw-w64-i686-pkgconf mingw-w64-i686-python
+            shell: 'msys2 {0}'
+          - target: windows-arm64
+            os: windows-11-arm
+            arch: arm64
+            cc: clang
+            msystem: CLANGARM64
+            packages: mingw-w64-clang-aarch64-clang mingw-w64-clang-aarch64-llvm mingw-w64-clang-aarch64-pkgconf mingw-w64-clang-aarch64-python
             shell: 'msys2 {0}'
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
+    env:
+      TARGET: ${{ matrix.target }}
+      CC: ${{ matrix.cc }}
+      GOARCH: ${{ matrix.arch }}
+      GOARM: '7'
+      TARGET_RUNNER: ${{ matrix.wrapper && format('{0}/{1}', github.workspace, matrix.wrapper) || '' }}
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
     defaults:
       run:
         shell: ${{ matrix.shell }}
@@ -48,20 +100,22 @@ jobs:
           if command -v sudo >/dev/null; then elevate=(sudo); else elevate=(); fi
           "${elevate[@]}" apt-get update
           "${elevate[@]}" apt-get install -y build-essential nasm pkg-config perl python3 curl xz-utils git ca-certificates file
+          case "$TARGET" in
+            linux-386) sudo apt-get install -y gcc-i686-linux-gnu libc6-i386 ;;
+            linux-arm) sudo apt-get install -y gcc-arm-linux-gnueabihf qemu-user ;;
+          esac
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run: brew install nasm pkg-config openssl@3
       - uses: msys2/setup-msys2@v2
         if: runner.os == 'Windows'
         with:
-          msystem: UCRT64
+          msystem: ${{ matrix.msystem }}
+          path-type: inherit
           update: true
           install: >-
             make perl curl tar xz openssl
-            mingw-w64-ucrt-x86_64-gcc
-            mingw-w64-ucrt-x86_64-nasm
-            mingw-w64-ucrt-x86_64-pkgconf
-            mingw-w64-ucrt-x86_64-python
+            ${{ matrix.packages }}
       - name: Build and validate candidate
         run: |
           set -euo pipefail
@@ -70,7 +124,6 @@ jobs:
           fi
           bash scripts/build-native.sh "$PWD/candidate-build" 2>&1 | tee candidate-build.log
       - name: Checkout pinned DDBOT consumer
-        if: runner.os == 'Linux'
         uses: actions/checkout@v4
         with:
           repository: cnxysoft/DDBOT-WSa
@@ -78,7 +131,6 @@ jobs:
           path: ddbot-consumer
           persist-credentials: false
       - name: Set up Go for consumer validation
-        if: runner.os == 'Linux'
         uses: actions/setup-go@v5
         with:
           go-version-file: ddbot-consumer/go.mod
@@ -86,42 +138,21 @@ jobs:
             ddbot-consumer/go.sum
             ddbot-consumer/**/go.sum
       - name: Test and build DDBOT with the candidate
-        if: runner.os == 'Linux'
-        working-directory: ddbot-consumer
-        env:
-          CGO_ENABLED: '1'
-          DDBOT_FFMPEG_FIXTURES: ${{ github.workspace }}/tests/data
         run: |
           set -euo pipefail
-          cp -R ../candidate-build/package ffmpeg/ffmpeg-static
-          cp ../tests/consumer/fixtures_test.go ffmpeg/candidate_fixtures_test.go
-          go test -v -tags ffmpeg_minimal ./ffmpeg 2>&1 | tee ../candidate-build/ddbot-tests.log
-          BINARY_NAME="DDBOT-candidate-linux-$(go env GOARCH)"
-          BINARY="../candidate-build/$BINARY_NAME"
-          go build -tags ffmpeg_minimal -trimpath -ldflags='-s -w' -o "$BINARY" ./cmd 2>&1 | tee ../candidate-build/ddbot-build.log
-          {
-            printf 'DDBOT source: %s\n' '${{ env.DDBOT_CONSUMER_REF }}'
-            go version
-            file "$BINARY"
-            stat -c '%s bytes' "$BINARY"
-            ldd "$BINARY"
-            readelf --version-info "$BINARY"
-            python3 ../tests/consumer/dependencies.py "$BINARY" --max-glibc 2.35
-          } | tee ../candidate-build/consumer-build-info.txt
-          (cd ../candidate-build && sha256sum "$BINARY_NAME" > "$BINARY_NAME.sha256")
+          python3 tests/consumer/validate.py
       - name: Upload validated candidate
         uses: actions/upload-artifact@v4
         with:
-          name: minimal-${{ matrix.os }}
+          name: minimal-${{ matrix.target }}
           path: |
             candidate-build/ffmpeg-*-candidate.zip
             candidate-build/ffmpeg-*-candidate.zip.sha256
           if-no-files-found: error
       - name: Upload validated DDBOT consumer
-        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: ddbot-${{ matrix.os }}
+          name: ddbot-${{ matrix.target }}
           path: |
             candidate-build/DDBOT-candidate-*
             candidate-build/consumer-build-info.txt
@@ -131,7 +162,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: diagnostics-${{ matrix.os }}
+          name: diagnostics-${{ matrix.target }}
           path: |
             candidate-build.log
             candidate-build/package/build-info/

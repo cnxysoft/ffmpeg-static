@@ -96,7 +96,10 @@ def main():
            if key.lower() not in {"http_proxy", "https_proxy", "all_proxy", "no_proxy"}}
 
     def probe(label, url, proxy="", ca="", success=True):
-        result = subprocess.run([executable, url, proxy, str(ca)], env=env,
+        command = [executable, url, proxy, str(ca)]
+        if env.get("TARGET_RUNNER"):
+            command.insert(0, env["TARGET_RUNNER"])
+        result = subprocess.run(command, env=env,
                                 capture_output=True, text=True, timeout=25)
         if (result.returncode == 0) != success:
             raise AssertionError(f"{label}: exit={result.returncode}\n{result.stdout}\n{result.stderr}")
