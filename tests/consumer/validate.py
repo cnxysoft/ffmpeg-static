@@ -58,7 +58,7 @@ def main():
     if source != os.environ["DDBOT_CONSUMER_REF"]:
         raise RuntimeError("Consumer source does not match the pinned commit")
     goos, arch = subprocess.check_output(["go", "env", "GOOS", "GOARCH"], text=True).split()
-    flags = ["-tags", "ffmpeg_minimal"]
+    flags = []  # Validate the consumer's actual default build, without opt-in tags.
     runner = os.environ.get("TARGET_RUNNER")
     execution = ["-exec", runner] if runner else []
     run(["go", "test", "-v", "-timeout=5m", *flags, *execution, "./ffmpeg"], output / "ddbot-tests.log", consumer)

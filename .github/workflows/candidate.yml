@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  DDBOT_CONSUMER_REF: a86c1d0c06f65135de632d742a05dc2c41b64113
+  DDBOT_CONSUMER_REF: 9f67250e464eb251539967d185defe290d8f1d39
   PYTHONUTF8: '1'
 
 concurrency:
