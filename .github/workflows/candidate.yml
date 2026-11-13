@@ -1,0 +1,80 @@
+name: Validate minimal candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/ffmpeg-minimal-candidate
+
+permissions:
+  contents: read
+
+concurrency:
+  group: minimal-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            shell: bash
+          - os: macos-15-intel
+            shell: bash
+          - os: macos-15
+            shell: bash
+          - os: windows-2022
+            shell: 'msys2 {0}'
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential nasm pkg-config perl python3 curl xz-utils
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install nasm pkg-config openssl@3
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make perl curl tar xz openssl
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-nasm
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-python
+      - name: Build and validate candidate
+        run: |
+          set -euo pipefail
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            export OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
+          fi
+          bash scripts/build-native.sh "$PWD/candidate-build" 2>&1 | tee candidate-build.log
+      - name: Upload validated candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimal-${{ matrix.os }}
+          path: |
+            candidate-build/ffmpeg-*-candidate.zip
+            candidate-build/ffmpeg-*-candidate.zip.sha256
+          if-no-files-found: error
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-${{ matrix.os }}
+          path: |
+            candidate-build.log
+            candidate-build/package/build-info/
+            candidate-build/ffmpeg-*/ffbuild/config.log
+          if-no-files-found: ignore
