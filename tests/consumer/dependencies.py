@@ -44,7 +44,7 @@ if os.environ.get("TARGET_RUNNER"):
     command = [os.environ["TARGET_RUNNER"], "-E", "LD_TRACE_LOADED_OBJECTS=1", args.binary]
 else:
     command = ["ldd", args.binary]
-report = subprocess.check_output(command, text=True)
+report = subprocess.check_output(command, text=True, timeout=30)
 print(report)
 if not re.search(r"\blibc\.so\.6\b", report):
     raise SystemExit("Cannot verify consumer's resolved libc dependency")
