@@ -65,7 +65,11 @@ Linux amd64 另在 WSL / Ubuntu 24.04 / GCC 13.3 / NASM 2.16.01 下完成 DDBOT 
 候选库生成 **36.67 MB**，减少约 **13.3%**。候选程序仅依赖系统 libc、libm 和动态加载器，
 不需要额外安装共享 FFmpeg / OpenSSL。发布库与候选库的编译器不同，仍不能归因于单个开关。
 
-四个平台的远端构建、22 项链路检查和迁移链接验证现已全部通过，产物的逐文件哈希也已复核。
+新增 Linux ARM64 原生验收：在 Ubuntu 22.04 容器内完成配套 DDBOT 的媒体、日志回归及主程序
+构建，成品为 **33.89 MB**。Linux amd64 / ARM64 的 CI 成品均只依赖 libc、libm 和系统加载器，
+最高 GLIBC 符号版本为 **2.35**；ARM64 未做旧依赖下的同源码体积对比。
+
+五个平台的远端构建、22 项链路检查和迁移链接验证已全部通过，产物的逐文件哈希也已复核。
 平台、产物大小、源码提交及验收范围见 [跨平台验证记录](docs/validation-2026-11-13.md)。
 
 ## 候选构建与验收
@@ -98,8 +102,11 @@ Windows 使用原生 MinGW GCC 与 MSYS2 Perl。Git 自带的精简 Perl 通常�
 测试创建临时证书，不访问公网；生成证书的 CLI 与被测静态 TLS 实现彼此独立。
 具体范围见 [tests/README.md](tests/README.md)。
 
-`.github/workflows/candidate.yml` 支持手动触发和候选分支推送，分别使用 Linux amd64、Windows amd64、
-macOS Intel 和 Apple Silicon 原生 runner 构建并上传候选 artifact，不创建 release。
+`.github/workflows/candidate.yml` 支持手动触发和候选分支推送，使用 Linux amd64 / ARM64、
+Windows amd64、macOS Intel 和 Apple Silicon 原生 runner 构建并上传候选 artifact，不创建 release。
+Linux ARM64 在原生 runner 上使用 Ubuntu 22.04 容器，与 amd64 保持相同用户空间基线。
+两种 Linux 架构还检出固定 SHA 的配套 DDBOT 源码，使用 `ffmpeg_minimal` 标签运行媒体与
+日志回归并构建完整程序；检查静态依赖及最高 GLIBC 符号版本不超过 2.35，上传成品和报告。
 其他平台，尤其 Windows ARM/ARM64，仍需专门校正 OpenSSL 目标并验证；
 不将候选配置直接复制到未验证的 10 平台发布矩阵。
 
@@ -108,7 +115,8 @@ macOS Intel 和 Apple Silicon 原生 runner 构建并上传候选 artifact，不
 1. 将 DDBOT 下载静态库的 `releases/latest/download` 改为指定 release，并保持头文件与库同版。
    配套工作区已固定现有 `v7.1-131`，并加入 10 个平台 ZIP 的 SHA-256 校验。
 2. 为候选库跑全平台构建及 MP4、TS/fMP4 HLS、GIF、HTTPS/代理验收，记录功能、版本、大小和哈希。
-3. 发布新库后，再将 DDBOT 固定到该版本并移除 `-lx264`。当前工作流仍保留原构建，
+3. 发布新库后，再将 DDBOT 固定到该版本，并使用配套 `ffmpeg_minimal` 构建标签省略 `-lx264`。
+   该标签不改变现有正式库的默认链接。当前工作流仍保留原构建，
    避免候选配置未经全平台验证就替换生产产物。
 
 其他值得修整的构建点：
