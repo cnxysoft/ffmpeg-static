@@ -78,3 +78,29 @@ a5c382ce0f762146ac11f6c13ccf887a51105eaae6c7d8ba63f96f8036276b1b  ffmpeg-windows
 早期五平台记录为 [CI #43379784679](https://github.com/cnxysoft/ffmpeg-static/actions/runs/43379784679)，
 被测提交为 [c388778](https://github.com/cnxysoft/ffmpeg-static/commit/c388778962ceb26ce9bf9b88d04521f993102013)。
 当时完整消费方仅验证 Linux amd64/ARM64；最终发布采用本页九目标完整验收结果。
+
+## DDBOT 默认实现切换与发布验收
+
+DDBOT `next-dev` 的最终集成为
+[034bed2](https://github.com/cnxysoft/DDBOT-WSa/commit/034bed23bb02f86dc9a86ffe966fdc3c74753ac4)。
+正式 [CI #43400570734](https://github.com/cnxysoft/DDBOT-WSa/actions/runs/43400570734)
+已通过根模块全量测试、vet、适配器测试与 vet，以及九个平台的 CLI / CGO 构建，共 18 个成品。
+[预览发布 #43401258013](https://github.com/cnxysoft/DDBOT-WSa/actions/runs/43401258013)
+成功晋升这次 CI 的成品到 [preview-next-dev](https://github.com/cnxysoft/DDBOT-WSa/releases/tag/preview-next-dev)。
+
+默认 CGO 构建直接使用本次精简库并移除 x264 链接，CLI 构建显式禁用 CGO。
+两种后端的原生日志统一进入 DD 格式，`ffmpeg.logLevel` 默认为 warning，支持热更新及全局日志过滤。
+
+消费方正式发布链另外校正了两项构建环境要求：
+
+- Windows 386 库来自 MINGW32/MSVCRT，交叉编译使用固定版本和 SHA-256 的 LLVM-mingw MSVCRT；
+  amd64/ARM64 使用对应 UCRT 发行包。本地执行该工具链交叉编译出的 386 媒体测试，
+  六项 HLS 转换、选流、失败清理、超时及日志回归全部通过；限制 PATH 到系统目录后仍可运行，
+  完整应用仅导入 Windows 系统 DLL。
+- Linux 发布构建固定 Ubuntu 22.04；CLI 和 amd64/ARM/ARM64 CGO 成品检查为静态可执行文件。
+  386 CGO 保留系统 libc 动态链接，实际最高 GLIBC 符号为 2.35。上传前增加依赖检查，
+  拒绝共享 FFmpeg/OpenSSL 和超过该基线的成品。此前 `ubuntu-latest` 曾将 386 需求抬高到 2.43，
+  已通过固定环境消除。
+
+验收期间也将虎牙订阅、AcFun 频道/直播页/订阅测试改为固定 HTTP 响应，保留流程和字段校验，
+避免公网房间变动、限流及超时影响正式全量测试；生产模块行为不变。
