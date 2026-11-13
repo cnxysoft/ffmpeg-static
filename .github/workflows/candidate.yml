@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           if command -v sudo >/dev/null; then elevate=(sudo); else elevate=(); fi
           "${elevate[@]}" apt-get update
-          "${elevate[@]}" apt-get install -y build-essential nasm pkg-config perl python3 curl xz-utils git ca-certificates
+          "${elevate[@]}" apt-get install -y build-essential nasm pkg-config perl python3 curl xz-utils git ca-certificates file
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run: brew install nasm pkg-config openssl@3
